@@ -25,8 +25,16 @@ from pygame.constants import ( K_LEFT, K_RIGHT, QUIT, KEYDOWN, K_ESCAPE, K_SPACE
 BASE_DIR = path.dirname(__file__)    # Diretorio do jogo
 SCREEN_WIDTH = 600                   # Comprimento da tela
 SCREEN_HEIGHT = 860                  # Altura da tela
-SPEED = 10                           # Velocidades
+SPEED = 10                           # Velocidade do jogo
+START_SPEED = 5                      # Velocidade para inicio do jogo
 FPS = 30                             # Frames por segundo
+START_GAME = (0, 0)
+GET_READY = (163, 525)
+SET_ENEMIES = (108, 525)
+KILLEM_ALL = (140, 525)
+SET_COUNTER = (282, 580)
+HIGH_SCORE = (0, 0)
+GAME_OVER = (0, 0)
 
 class Ship(pygame.sprite.Sprite):
     '''Classe que representa a nave do jogador'''
@@ -77,6 +85,8 @@ class Laser(pygame.sprite.Sprite):
     def update(self):
         '''Função que representa a trajetória do laser'''
         self.rect[1] -= self.speed
+        if (((self.rect[1]) // 10) * 10) == -((self.get_height() // 10) * 10):
+            self.kill()
 
     def get_width(self):
         '''Função que retorna a largura do laser'''
@@ -101,7 +111,7 @@ def main():
     pygame.display.set_icon(icon)
     pygame.display.set_caption('Space Invaders v1.0')
     # Contador de pontuação do jogo
-#    score = 0
+    score = 0
     # Testa o sistema em que o jogo está rodando
     sound_type = 'wav' if 'win' in plat else 'ogg'
     # Carregamento dos sons do jogo
@@ -111,12 +121,37 @@ def main():
         pygame.mixer.Sound(f'{BASE_DIR}/assets/sounds/{sound_type}/shot.{sound_type}')
     )
     # Criação das mensagens do jogo
-    messages = [
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/start_game.png').convert_alpha()
-#        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/get_ready.png').convert_alpha()
+    messages = (
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/start_game.png').convert_alpha(),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/get_ready.png').convert_alpha(),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/set_enemies.png').convert_alpha(),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/kill\'em_all.png').convert_alpha()
 #        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/game_over.png').convert_alpha()
 #        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/high_score.png').convert_alpha()
-    ]
+    )
+    # Criação dos números
+    numbers = (
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/numbers/num_0-.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/numbers/num_1-.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/numbers/num_2-.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/numbers/num_3-.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/numbers/num_4-.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/numbers/num_5-.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/numbers/num_6-.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/numbers/num_7-.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/numbers/num_8-.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/numbers/num_9-.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/numbers/num_0+.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/numbers/num_1+.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/numbers/num_2+.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/numbers/num_3+.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/numbers/num_4+.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/numbers/num_5+.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/numbers/num_6+.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/numbers/num_7+.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/numbers/num_8+.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/numbers/num_9+.png')
+    )
     # Criação da imagem de fundo
     backgrounds = (
         pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/bg0_title-screen.png'),
@@ -144,11 +179,8 @@ def main():
     while splash:
         # Controle da velocidade do jogo
         clock.tick(FPS)
-        splash = messages[0]
-        splash_x = 0
-        splash_y = 0
         screen.blit(background, (0, 0))
-        screen.blit(splash, (splash_x, splash_y))
+        screen.blit(messages[0], START_GAME)
         for event in pygame.event.get():
             if event.type == QUIT:
                 pygame.quit()
@@ -164,20 +196,13 @@ def main():
         ship_group.draw(screen)
         pygame.display.update()
     level = 1
+    countdown = 3
+    last_count = pygame.time.get_ticks()
     screen_limit_left = 0
     screen_limit_right = ((SCREEN_WIDTH - ship.get_width()) // 10) * 10
     screen_limit_bottom = ((SCREEN_HEIGHT - ship.get_height()) // 10) * 10
-    start_time = [
-        time.localtime()[3],
-        time.localtime()[4],
-        time.localtime()[5]
-    ]
-    elapsed_time = [
-        start_time[0] - time.localtime()[3],
-        start_time[1] - time.localtime()[4],
-        start_time[2] - time.localtime()[5]
-    ]
-    print(elapsed_time)
+#    enemies = [ [0] * 5 ] * 5
+#    print(enemies)
     while run:
         # Controle da velocidade do jogo
         clock.tick(FPS)
@@ -190,15 +215,15 @@ def main():
             # Evento que identifica a tecla pressionada
             if event.type == KEYDOWN:
                 # Teste para saber se a tecla é "BARRA DE ESPAÇO"
-                if event.key == K_SPACE and ((ship.rect[1] // 10) * 10) == screen_limit_bottom:
+                if event.key == K_SPACE and countdown == 0:
                     laser_group.add(ship.shoot(sounds[2]))
 
         commands = pygame.key.get_pressed()
         # Teste para saber se a tecla é "SETA PARA A ESQUERDA"
-        if commands[K_LEFT] and ((ship.rect[1] // 10) * 10) == screen_limit_bottom:
+        if commands[K_LEFT] and countdown == 0:
             ship.rect[0] -= SPEED if ((ship.rect[0] // 10) * 10) != screen_limit_left else 0
         # Teste para saber se a tecla é "SETA PARA A DIREITA"
-        if commands[K_RIGHT] and ((ship.rect[1] // 10) * 10) == screen_limit_bottom:
+        if commands[K_RIGHT] and countdown == 0:
             ship.rect[0] += SPEED if ((ship.rect[0] // 10) * 10) != screen_limit_right else 0
 
         background = backgrounds[level]
@@ -209,7 +234,29 @@ def main():
         laser_group.update()
         ship_group.draw(screen)
         laser_group.draw(screen)
-        ship.rect[1] += SPEED if ((ship.rect[1] // 10) * 10) != screen_limit_bottom else 0
+        ship.rect[1] += START_SPEED if ((ship.rect[1] // 10) * 10) != screen_limit_bottom else 0
+
+        if countdown != 0:
+            counter = pygame.time.get_ticks()
+            if level == 1:
+                if countdown >= 3:
+                    screen.blit(messages[1], GET_READY)
+                elif countdown >= 2:
+                    screen.blit(messages[2], SET_ENEMIES)
+                elif countdown >= 1:
+                    screen.blit(messages[3], KILLEM_ALL)
+            else:
+                screen.blit(messages[1], GET_READY)
+                if countdown >= 3:
+                    screen.blit(numbers[13], SET_COUNTER)
+                elif countdown >= 2:
+                    screen.blit(numbers[12], SET_COUNTER)
+                elif countdown >= 1:
+                    screen.blit(numbers[11], SET_COUNTER)
+
+            if counter - last_count > 1000:
+                countdown -= 1
+                last_count = counter
 
         pygame.display.update()
 
@@ -217,10 +264,9 @@ try:
     while True:
         main()
 except (ValueError, TypeError, ZeroDivisionError) as exc:
-    print(f"Oops! {exc.__class__} occurred. {exc.args}")
+    print(f"Oops! {exc.__class__} occurred.\n{exc.args}")
 else:
-    if info()[0] is not None:
-        print(f"Oops! {info()[0]} occurred.")
+    if info()[0] is not None: print(f"Oops! {info()[0]} occurred.")
 finally:
     pygame.quit()
     ext()
