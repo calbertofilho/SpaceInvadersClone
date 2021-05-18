@@ -18,9 +18,9 @@ from os import path, environ
 from random import randint, choice
 from sys import platform as plat, exit as ext, exc_info as info
 import pickle
+import time
 import pygame
 from pygame.constants import ( K_LEFT, K_RIGHT, QUIT, KEYDOWN, K_ESCAPE, K_SPACE )
-import time
 # Constantes
 BASE_DIR = path.dirname(__file__)    # Diretorio do jogo
 SCREEN_WIDTH = 600                   # Comprimento da tela
@@ -32,10 +32,10 @@ class Ship(pygame.sprite.Sprite):
     '''Classe que representa a nave do jogador'''
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        self.images = [
+        self.images = (
             pygame.image.load(f'{BASE_DIR}/assets/sprites/player/player.png').convert_alpha(),
             pygame.image.load(f'{BASE_DIR}/assets/sprites/player/player_.png').convert_alpha()
-        ]
+        )
         self.current_image = 0
         self.image = self.images[self.current_image]
         self.mask = pygame.mask.from_surface(self.image)
@@ -65,7 +65,9 @@ class Laser(pygame.sprite.Sprite):
     '''Classe que representa o laser da nave'''
     def __init__(self, pos_x, pos_y):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.image.load(f'{BASE_DIR}/assets/sprites/player/bullet.png').convert_alpha()
+        self.image = pygame.image.load(
+            f'{BASE_DIR}/assets/sprites/player/bullet.png'
+        ).convert_alpha()
         self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
         self.rect[0] = pos_x
@@ -99,15 +101,15 @@ def main():
     pygame.display.set_icon(icon)
     pygame.display.set_caption('Space Invaders v1.0')
     # Contador de pontuação do jogo
-    score = 0
+#    score = 0
     # Testa o sistema em que o jogo está rodando
     sound_type = 'wav' if 'win' in plat else 'ogg'
     # Carregamento dos sons do jogo
-    sounds = [
+    sounds = (
         pygame.mixer.Sound(f'{BASE_DIR}/assets/sounds/{sound_type}/death.{sound_type}'),
         pygame.mixer.Sound(f'{BASE_DIR}/assets/sounds/{sound_type}/explosion.{sound_type}'),
         pygame.mixer.Sound(f'{BASE_DIR}/assets/sounds/{sound_type}/shot.{sound_type}')
-    ]
+    )
     # Criação das mensagens do jogo
     messages = [
         pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/start_game.png').convert_alpha()
@@ -116,7 +118,7 @@ def main():
 #        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/high_score.png').convert_alpha()
     ]
     # Criação da imagem de fundo
-    backgrounds = [
+    backgrounds = (
         pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/bg0_title-screen.png'),
         pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/bg1.png'),
         pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/bg2.png'),
@@ -128,7 +130,7 @@ def main():
         pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/bg8.png'),
         pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/bg9.png'),
         pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/bg10_big-boss.png')
-    ]
+    )
     background = backgrounds[0]
     background = pygame.transform.scale(background, (SCREEN_WIDTH, SCREEN_HEIGHT))
     ship_group = pygame.sprite.Group()
@@ -165,8 +167,16 @@ def main():
     screen_limit_left = 0
     screen_limit_right = ((SCREEN_WIDTH - ship.get_width()) // 10) * 10
     screen_limit_bottom = ((SCREEN_HEIGHT - ship.get_height()) // 10) * 10
-    start_time = [ time.localtime()[3], time.localtime()[4], time.localtime()[5] ]
-    elapsed_time = [ start_time[0] - time.localtime()[3], start_time[1] - time.localtime()[4], start_time[2] - time.localtime()[5] ]
+    start_time = [
+        time.localtime()[3],
+        time.localtime()[4],
+        time.localtime()[5]
+    ]
+    elapsed_time = [
+        start_time[0] - time.localtime()[3],
+        start_time[1] - time.localtime()[4],
+        start_time[2] - time.localtime()[5]
+    ]
     print(elapsed_time)
     while run:
         # Controle da velocidade do jogo
@@ -180,16 +190,15 @@ def main():
             # Evento que identifica a tecla pressionada
             if event.type == KEYDOWN:
                 # Teste para saber se a tecla é "BARRA DE ESPAÇO"
-                if event.key == K_SPACE:
+                if event.key == K_SPACE and ((ship.rect[1] // 10) * 10) == screen_limit_bottom:
                     laser_group.add(ship.shoot(sounds[2]))
-
 
         commands = pygame.key.get_pressed()
         # Teste para saber se a tecla é "SETA PARA A ESQUERDA"
-        if commands[K_LEFT]:
+        if commands[K_LEFT] and ((ship.rect[1] // 10) * 10) == screen_limit_bottom:
             ship.rect[0] -= SPEED if ((ship.rect[0] // 10) * 10) != screen_limit_left else 0
         # Teste para saber se a tecla é "SETA PARA A DIREITA"
-        if commands[K_RIGHT]:
+        if commands[K_RIGHT] and ((ship.rect[1] // 10) * 10) == screen_limit_bottom:
             ship.rect[0] += SPEED if ((ship.rect[0] // 10) * 10) != screen_limit_right else 0
 
         background = backgrounds[level]
