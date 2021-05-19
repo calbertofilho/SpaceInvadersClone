@@ -36,7 +36,7 @@ SET_COUNTER = (282, 580)
 HIGH_SCORE = (0, 0)
 GAME_OVER = (0, 0)
 
-class Ship(pygame.sprite.Sprite):
+class Spaceship(pygame.sprite.Sprite):
     '''Classe que representa a nave do jogador'''
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
@@ -96,6 +96,62 @@ class Laser(pygame.sprite.Sprite):
         '''Função que retorna o comprimento do laser'''
         return self.image.get_size()[1]
 
+class Invaders(pygame.sprite.Sprite):
+    '''Classe que representa os inimigos'''
+    def __init__(self, alien, pos_x, pos_y):
+        pygame.sprite.Sprite.__init__(self)
+        self.enemies = (
+            (
+                pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/White-Enemy1.png').convert_alpha(),
+                pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/White-Enemy1_.png').convert_alpha()
+            ),
+            (
+                pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/Green-Enemy2.png').convert_alpha(),
+                pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/Green-Enemy2_.png').convert_alpha()
+            ),
+            (
+                pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/Yellow-Enemy3.png').convert_alpha(),
+                pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/Yellow-Enemy3_.png').convert_alpha()
+            )
+        )
+        self.enemy = self.enemies[alien]
+        self.current_image = 0
+        self.image = self.enemy[self.current_image]
+        self.mask = pygame.mask.from_surface(self.image)
+        self.rect = self.image.get_rect()
+        self.rect[0] = (SCREEN_WIDTH / 2) - (self.image.get_width() / 2)
+        self.rect[1] = SCREEN_HEIGHT / 2
+        self.rect = self.image.get_rect()
+        self.rect.center = [pos_x, pos_y]
+        self.move_counter = 0
+        self.move_direction = 1
+        self.last_count = pygame.time.get_ticks()
+
+    def update(self):
+        '''Função que representa como a nave inimiga se comporta em cada interação no jogo'''
+        counter = pygame.time.get_ticks()
+        if counter - self.last_count > 300:
+            self.current_image = (self.current_image + 1) % 2
+            self.last_count = counter
+        self.image = self.enemy[self.current_image]
+        self.rect.x += self.move_direction
+        self.move_counter += 1
+        if abs(self.move_counter) > 75:
+            self.move_direction *= -1
+            self.move_counter *= self.move_direction
+
+    def death(self, alien, pos_x, pos_y, sound):
+        self.images = (
+            pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/White-Enemy-Burst.png').convert_alpha(),
+            pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/Green-Enemy-Burst.png').convert_alpha(),
+            pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/Yellow-Enemy-Burst.png').convert_alpha()
+        )
+        self.image = self.images[alien]
+        self.rect = self.image.get_rect()
+        self.rect.center = [pos_x, pos_y]
+        pygame.mixer.Sound.play(sound)
+        self.kill()
+
 
 def main():
     '''Função principal que trata de toda a execução do jogo'''
@@ -105,6 +161,7 @@ def main():
     pygame.mixer.pre_init(frequency = 44100, size = 16, channels = 1, buffer = 512)
     splash = True
     run = False
+    rows = 3
     # Criação da janela
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     icon = pygame.image.load(f'{BASE_DIR}/assets/sprites/icons/icon.png').convert_alpha()
@@ -169,8 +226,15 @@ def main():
     background = backgrounds[0]
     background = pygame.transform.scale(background, (SCREEN_WIDTH, SCREEN_HEIGHT))
     ship_group = pygame.sprite.Group()
-    ship = Ship()
+    ship = Spaceship()
     ship_group.add(ship)
+    invaders_group = pygame.sprite.Group()
+    def create_invaders(rows, cols):
+        for row in range(rows):
+            invader = randint(0, 2)
+            for item in range(cols):
+                enemy = Invaders(invader, 100 + item * 100, 100 + row * 70)
+                invaders_group.add(enemy)
     laser_group = pygame.sprite.Group()
     # Criação do controle de tempo do jogo
     clock = pygame.time.Clock()
@@ -201,8 +265,7 @@ def main():
     screen_limit_left = 0
     screen_limit_right = ((SCREEN_WIDTH - ship.get_width()) // 10) * 10
     screen_limit_bottom = ((SCREEN_HEIGHT - ship.get_height()) // 10) * 10
-#    enemies = [ [0] * 5 ] * 5
-#    print(enemies)
+
     while run:
         # Controle da velocidade do jogo
         clock.tick(FPS)
@@ -232,8 +295,10 @@ def main():
         screen.blit(background, (0, 0))
         ship_group.update()
         laser_group.update()
+        invaders_group.update()
         ship_group.draw(screen)
         laser_group.draw(screen)
+        invaders_group.draw(screen)
         ship.rect[1] += START_SPEED if ((ship.rect[1] // 10) * 10) != screen_limit_bottom else 0
 
         if countdown != 0:
@@ -243,6 +308,8 @@ def main():
                     screen.blit(messages[1], GET_READY)
                 elif countdown >= 2:
                     screen.blit(messages[2], SET_ENEMIES)
+                    if len(invaders_group) == 0:
+                        create_invaders(rows, 5)
                 elif countdown >= 1:
                     screen.blit(messages[3], KILLEM_ALL)
             else:
@@ -258,6 +325,13 @@ def main():
                 countdown -= 1
                 last_count = counter
 
+        if pygame.sprite.groupcollide(laser_group, invaders_group, True, True, pygame.sprite.collide_mask):
+            pygame.mixer.Sound.play(sounds[1])
+            if len(invaders_group) == 0:
+                level += 1
+                rows += 1
+                create_invaders(rows, 5)
+
         pygame.display.update()
 
 try:
@@ -266,7 +340,8 @@ try:
 except (ValueError, TypeError, ZeroDivisionError) as exc:
     print(f"Oops! {exc.__class__} occurred.\n{exc.args}")
 else:
-    if info()[0] is not None: print(f"Oops! {info()[0]} occurred.")
+    if info()[0] is not None:
+        print(f"Oops! {info()[0]} occurred.")
 finally:
     pygame.quit()
     ext()
