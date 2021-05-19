@@ -4,7 +4,7 @@ Utilizando a biblioteca: PyGame
 
 Criado por: Carlos Alberto Morais Moura Filho
 Versão: 1.0
-Atualizado em: 
+Atualizado em: 19/05/2021
 '''
 # pylint: disable=no-member
 # pylint: disable=too-many-locals
@@ -14,7 +14,7 @@ Atualizado em:
 # pylint: disable=no-name-in-module
 
 # Bibliotecas
-from os import path, environ
+from os import kill, path, environ
 from random import randint, choice
 from sys import platform as plat, exit as ext, exc_info as info
 import pickle
@@ -48,18 +48,33 @@ class Spaceship(pygame.sprite.Sprite):
         self.image = self.images[self.current_image]
         self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
-        self.rect[0] = (SCREEN_WIDTH / 2) - (self.image.get_width() / 2)
-        self.rect[1] = SCREEN_HEIGHT - self.image.get_height()
+        self.center = (SCREEN_WIDTH / 2) - (self.image.get_width() / 2)
+        self.bottom = SCREEN_HEIGHT - self.image.get_height()
+        self.rect[0] = self.center
+        self.rect[1] = self.bottom
+        self.reset_pos = 0
 
     def update(self):
         '''Função que representa como a nave se comporta em cada interação no jogo'''
         self.current_image = (self.current_image + 1) % len(self.images)
         self.image = self.images[self.current_image]
+        if self.reset_pos == 1:
+            if (self.rect[0] // 10) * 10 > (self.center // 10) * 10:
+                self.rect[0] -= START_SPEED if (self.rect[0] // 10) * 10 > (self.center // 10) * 10 else 0
+            elif (self.rect[0] // 10) * 10 < (self.center // 10) * 10:
+                self.rect[0] += START_SPEED if (self.rect[0] // 10) * 10 < (self.center // 10) * 10 else 0
+            else:
+                self.rect[0] = self.center
+                self.reset_pos = 0
 
-    def shoot(self, sound):
+    def shoot(self, laser_fx, explosion_fx, invaders, lasers):
         '''Função que representa a ação de atirar com a nave'''
-        pygame.mixer.Sound.play(sound)
-        return Laser(self.rect[0] + 33, self.rect[1] - 28)
+        pygame.mixer.Sound.play(laser_fx)
+        return Laser(self.rect[0] + 33, self.rect[1] - 28, explosion_fx, invaders, lasers)
+
+    def reset_position(self):
+        '''Função que reinicia a posição da nave'''
+        self.reset_pos = 1
 
     def get_width(self):
         '''Função que retorna a largura da nave'''
@@ -71,7 +86,7 @@ class Spaceship(pygame.sprite.Sprite):
 
 class Laser(pygame.sprite.Sprite):
     '''Classe que representa o laser da nave'''
-    def __init__(self, pos_x, pos_y):
+    def __init__(self, pos_x, pos_y, sound, invaders_group, laser_group):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.image.load(
             f'{BASE_DIR}/assets/sprites/player/bullet.png'
@@ -81,10 +96,15 @@ class Laser(pygame.sprite.Sprite):
         self.rect[0] = pos_x
         self.rect[1] = pos_y
         self.speed = SPEED
+        self.laser_group = laser_group
+        self.invaders_group = invaders_group
+        self.explosion = sound
 
     def update(self):
-        '''Função que representa a trajetória do laser'''
+        '''Função que representa o que acontece na trajetória do laser'''
         self.rect[1] -= self.speed
+        if pygame.sprite.groupcollide(self.laser_group, self.invaders_group, True, True, pygame.sprite.collide_mask):
+            pygame.mixer.Sound.play(self.explosion)
         if (((self.rect[1]) // 10) * 10) == -((self.get_height() // 10) * 10):
             self.kill()
 
@@ -151,7 +171,6 @@ class Invaders(pygame.sprite.Sprite):
         self.rect.center = [pos_x, pos_y]
         pygame.mixer.Sound.play(sound)
         self.kill()
-
 
 def main():
     '''Função principal que trata de toda a execução do jogo'''
@@ -235,6 +254,8 @@ def main():
             for item in range(cols):
                 enemy = Invaders(invader, 100 + item * 100, 100 + row * 70)
                 invaders_group.add(enemy)
+    def has_invaders():
+        return len(invaders_group) != 0
     laser_group = pygame.sprite.Group()
     # Criação do controle de tempo do jogo
     clock = pygame.time.Clock()
@@ -259,12 +280,25 @@ def main():
         ship_group.update()
         ship_group.draw(screen)
         pygame.display.update()
+
+    start = False
     level = 1
     countdown = 3
     last_count = pygame.time.get_ticks()
     screen_limit_left = 0
     screen_limit_right = ((SCREEN_WIDTH - ship.get_width()) // 10) * 10
     screen_limit_bottom = ((SCREEN_HEIGHT - ship.get_height()) // 10) * 10
+
+    def next_level():
+        ship.reset_position()
+        laser_group.empty()
+        if rows < 8:
+            new_rows = rows + 1
+        else:
+            new_rows = 8
+        new_level = level + 1
+        return new_level, new_rows
+
 
     while run:
         # Controle da velocidade do jogo
@@ -279,7 +313,7 @@ def main():
             if event.type == KEYDOWN:
                 # Teste para saber se a tecla é "BARRA DE ESPAÇO"
                 if event.key == K_SPACE and countdown == 0:
-                    laser_group.add(ship.shoot(sounds[2]))
+                    laser_group.add(ship.shoot(sounds[2], sounds[1], invaders_group, laser_group))
 
         commands = pygame.key.get_pressed()
         # Teste para saber se a tecla é "SETA PARA A ESQUERDA"
@@ -308,8 +342,7 @@ def main():
                     screen.blit(messages[1], GET_READY)
                 elif countdown >= 2:
                     screen.blit(messages[2], SET_ENEMIES)
-                    if len(invaders_group) == 0:
-                        create_invaders(rows, 5)
+                    start = True
                 elif countdown >= 1:
                     screen.blit(messages[3], KILLEM_ALL)
             else:
@@ -320,17 +353,16 @@ def main():
                     screen.blit(numbers[12], SET_COUNTER)
                 elif countdown >= 1:
                     screen.blit(numbers[11], SET_COUNTER)
-
             if counter - last_count > 1000:
                 countdown -= 1
                 last_count = counter
 
-        if pygame.sprite.groupcollide(laser_group, invaders_group, True, True, pygame.sprite.collide_mask):
-            pygame.mixer.Sound.play(sounds[1])
-            if len(invaders_group) == 0:
-                level += 1
-                rows += 1
-                create_invaders(rows, 5)
+        if (len(invaders_group) == 0) and (countdown == 2):
+            create_invaders(rows, 5)
+        if start and (len(invaders_group) == 0):
+            level, rows = next_level()
+            create_invaders(rows, 5)
+            countdown = 3
 
         pygame.display.update()
 
