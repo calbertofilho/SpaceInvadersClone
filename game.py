@@ -4,7 +4,7 @@ Utilizando a biblioteca: PyGame
 
 Criado por: Carlos Alberto Morais Moura Filho
 Versão: 1.0
-Atualizado em: 19/05/2021
+Atualizado em: 20/05/2021
 '''
 # pylint: disable=no-member
 # pylint: disable=too-many-locals
@@ -18,7 +18,7 @@ from os import kill, path, environ
 from random import randint, choice
 from sys import platform as plat, exit as ext, exc_info as info
 import pickle
-import time
+from math import ceil
 import pygame
 from pygame.constants import ( K_LEFT, K_RIGHT, QUIT, KEYDOWN, K_ESCAPE, K_SPACE )
 # Constantes
@@ -35,12 +35,16 @@ BULLET_ANIMATION_TIME = 200          # Tempo, em milissegundos, entre as trocas 
 LASER_TIMING = 500                   # Tempo, em milissegundos, entre um disparo e outro
 BULLET_TIMING = 2 * LASER_TIMING     # Tempo, em milissegundos, entre uma bala e outra
 START_GAME = (0, 0)                  # Posição (x, y) da Splash Screen
-GET_READY = (163, 525)               # Posição (x, y) da mensagem GET READY !
-SET_ENEMIES = (108, 525)             # Posição (x, y) da mensagem SET ENEMIES...
-KILLEM_ALL = (140, 525)              # Posição (x, y) da mensagem KILL'EM ALL
+LOADING = (440, 10)
+GET_READY = (103, 525)               # Posição (x, y) da mensagem GET READY !
+INVADING = (103, 525)                # Posição (x, y) da mensagem SET ENEMIES...
+KILLEM_ALL = (103, 525)              # Posição (x, y) da mensagem KILL'EM ALL
+GAME_OVER = (103, 525)               # Posição (x, y) da mensagem GAME OVER
 SET_COUNTER = (282, 580)             # Posição (x, y) do número da contagem
 HIGH_SCORE = (0, 0)                  # Posição (x, y) da mensagem HIGH SCORE
-GAME_OVER = (0, 0)                   # Posição (x, y) da mensagem GAME OVER
+VOLUME_BGM = 0.8
+FADEOUT = 1500
+VOLUME_FX = 0.4
 
 class Spaceship(pygame.sprite.Sprite):
     '''Classe que representa a nave do jogador'''
@@ -75,6 +79,7 @@ class Spaceship(pygame.sprite.Sprite):
 
     def shoot(self, laser_fx):
         '''Função que representa a ação de atirar com a nave'''
+        laser_fx.set_volume(VOLUME_FX)
         pygame.mixer.Sound.play(laser_fx)
         return Laser(self.rect[0] + 33, self.rect[1] - 28)
 
@@ -153,6 +158,7 @@ class Invaders(pygame.sprite.Sprite):
         self.laser_group = laser_group
         self.invaders_group = invaders_group
         self.explosion = sound
+        self.explosion.set_volume(VOLUME_FX)
 
     def update(self):
         '''Função que representa como a nave inimiga se comporta em cada interação no jogo'''
@@ -229,19 +235,33 @@ def main():
     # Testa o sistema em que o jogo está rodando
     sound_type = 'wav' if 'win' in plat else 'ogg'
     # Carregamento dos sons do jogo
-    sounds = (
-        pygame.mixer.Sound(f'{BASE_DIR}/assets/sounds/{sound_type}/death.{sound_type}'),
-        pygame.mixer.Sound(f'{BASE_DIR}/assets/sounds/{sound_type}/explosion.{sound_type}'),
-        pygame.mixer.Sound(f'{BASE_DIR}/assets/sounds/{sound_type}/shot.{sound_type}')
+    bgm = (
+        f'{BASE_DIR}/assets/sounds/bgm/main.mid',
+        f'{BASE_DIR}/assets/sounds/bgm/level1.mid',
+        f'{BASE_DIR}/assets/sounds/bgm/level2.mid',
+        f'{BASE_DIR}/assets/sounds/bgm/level3.mid',
+        f'{BASE_DIR}/assets/sounds/bgm/level4.mid',
+        f'{BASE_DIR}/assets/sounds/bgm/level5.mid',
+        f'{BASE_DIR}/assets/sounds/bgm/level6.mid',
+        f'{BASE_DIR}/assets/sounds/bgm/level7.mid',
+        f'{BASE_DIR}/assets/sounds/bgm/level8.mid',
+        f'{BASE_DIR}/assets/sounds/bgm/level9.mid',
+        f'{BASE_DIR}/assets/sounds/bgm/boss.mid'
+    )
+    effects = (
+        pygame.mixer.Sound(f'{BASE_DIR}/assets/sounds/fx/{sound_type}/death.{sound_type}'),
+        pygame.mixer.Sound(f'{BASE_DIR}/assets/sounds/fx/{sound_type}/explosion.{sound_type}'),
+        pygame.mixer.Sound(f'{BASE_DIR}/assets/sounds/fx/{sound_type}/shot.{sound_type}')
     )
     # Criação das mensagens do jogo
     messages = (
         pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/start_game.png').convert_alpha(),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/loading.png').convert_alpha(),
         pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/get_ready.png').convert_alpha(),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/set_enemies.png').convert_alpha(),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/kill\'em_all.png').convert_alpha()
-#        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/game_over.png').convert_alpha()
-#        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/high_score.png').convert_alpha()
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/invading.png').convert_alpha(),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/kill\'em_all.png').convert_alpha(),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/game_over.png').convert_alpha(),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/high_score.png').convert_alpha()
     )
     # Criação dos números
     numbers = (
@@ -268,17 +288,17 @@ def main():
     )
     # Criação da imagem de fundo
     backgrounds = (
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/bg0_title-screen.png'),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/bg1.png'),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/bg2.png'),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/bg3.png'),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/bg4.png'),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/bg5.png'),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/bg6.png'),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/bg7.png'),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/bg8.png'),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/bg9.png'),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/bg10_big-boss.png')
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/main.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/level1.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/level2.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/level3.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/level4.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/level5.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/level6.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/level7.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/level8.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/level9.png'),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/boss.png')
     )
     background = backgrounds[0]
     background = pygame.transform.scale(background, (SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -291,13 +311,29 @@ def main():
         for row in range(rows):
             invader = randint(0, 2)
             for item in range(cols):
-                enemy = Invaders(invader, 100 + item * 100, 100 + row * 50, sounds[1], invaders_group, laser_group)
+                enemy = Invaders(invader, 100 + item * 100, 100 + row * 50, effects[1], invaders_group, laser_group)
                 invaders_group.add(enemy)
     bullets_group = pygame.sprite.Group()
+    def play_bgm(track):
+        if not(pygame.mixer.music.get_busy()):
+            pygame.mixer.music.load(bgm[track])
+            pygame.mixer.music.set_volume(VOLUME_BGM)
+            pygame.mixer.music.play()
+    def stop_bgm(delay):
+        lstcnt = cnt = pygame.time.get_ticks()
+        cntdown = 1 if (delay < 1000) else int((ceil(delay // 10) * 10) / 1000)
+        pygame.mixer.music.fadeout(delay)
+        if cnt - lstcnt > delay:
+            cntdown -= 1
+            if cntdown == 0:
+                pygame.mixer.music.stop()
+            lstcnt = cnt
     # Criação do controle de tempo do jogo
     clock = pygame.time.Clock()
     # Laço da tela de abertura do jogo
     ship.rect[1] -= 400
+    play_bgm(0)
+
     while splash:
         # Controle da velocidade do jogo
         clock.tick(FPS)
@@ -314,6 +350,7 @@ def main():
                 if event.key == K_SPACE:
                     splash = False
                     run = True
+                    stop_bgm(FADEOUT)
         ship_group.update()
         ship_group.draw(screen)
         pygame.display.update()
@@ -327,6 +364,7 @@ def main():
     screen_limit_bottom = ((SCREEN_HEIGHT - ship.get_height()) // 10) * 10
 
     def next_level():
+        stop_bgm(FADEOUT)
         ship.reset_position()
         laser_group.empty()
         bullets_group.empty()
@@ -352,7 +390,7 @@ def main():
                 if event.key == K_SPACE and countdown == 0:
                     laser_counter = pygame.time.get_ticks()
                     if laser_counter - laser_last_count > LASER_TIMING:
-                        laser_group.add(ship.shoot(sounds[2]))
+                        laser_group.add(ship.shoot(effects[2]))
                         laser_last_count = laser_counter
 
         commands = pygame.key.get_pressed()
@@ -380,15 +418,17 @@ def main():
         if countdown != 0:
             counter = pygame.time.get_ticks()
             if level == 1:
+                screen.blit(messages[1], LOADING)
                 if countdown >= 3:
-                    screen.blit(messages[1], GET_READY)
+                    screen.blit(messages[2], GET_READY)
                 elif countdown >= 2:
-                    screen.blit(messages[2], SET_ENEMIES)
+                    screen.blit(messages[3], INVADING)
                     start = True
                 elif countdown >= 1:
-                    screen.blit(messages[3], KILLEM_ALL)
+                    screen.blit(messages[4], KILLEM_ALL)
             else:
-                screen.blit(messages[1], GET_READY)
+                screen.blit(messages[1], LOADING)
+                screen.blit(messages[2], GET_READY)
                 if countdown >= 3:
                     screen.blit(numbers[13], SET_COUNTER)
                 elif countdown >= 2:
@@ -399,6 +439,7 @@ def main():
                 countdown -= 1
                 if countdown == 0:
                     start_enemies = True
+                    play_bgm(level)
                 last_count = counter
 
         if (len(invaders_group) == 0) and (countdown == 2):
@@ -416,7 +457,7 @@ def main():
                 bullet = Bullets(attacking_invader.rect.centerx, attacking_invader.rect.bottom)
                 bullets_group.add(bullet)
                 bullet_last_count = bullet_counter
-        print(len(bullets_group))
+
         pygame.display.update()
 
 try:
