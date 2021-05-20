@@ -26,15 +26,21 @@ BASE_DIR = path.dirname(__file__)    # Diretorio do jogo
 SCREEN_WIDTH = 600                   # Comprimento da tela
 SCREEN_HEIGHT = 860                  # Altura da tela
 SPEED = 10                           # Velocidade do jogo
-START_SPEED = 5                      # Velocidade para inicio do jogo
+BULLET_SPEED = START_SPEED = 5       # Velocidade para inicio do jogo e das balas dos inimigos
 FPS = 30                             # Frames por segundo
-START_GAME = (0, 0)
-GET_READY = (163, 525)
-SET_ENEMIES = (108, 525)
-KILLEM_ALL = (140, 525)
-SET_COUNTER = (282, 580)
-HIGH_SCORE = (0, 0)
-GAME_OVER = (0, 0)
+MAX_ROWS = 10                        # Número máximo de linhas na matriz de inimigos
+MAX_BULLETS = 5                      # Quantidade de balas, ao mesmo tempo, na tela, do inimigo
+ENEMY_ANIMATION_TIME = 300           # Tempo, em milissegundos, entre as trocas das imagens do inimigo
+BULLET_ANIMATION_TIME = 200          # Tempo, em milissegundos, entre as trocas das imagens das balas
+LASER_TIMING = 500                   # Tempo, em milissegundos, entre um disparo e outro
+BULLET_TIMING = 2 * LASER_TIMING     # Tempo, em milissegundos, entre uma bala e outra
+START_GAME = (0, 0)                  # Posição (x, y) da Splash Screen
+GET_READY = (163, 525)               # Posição (x, y) da mensagem GET READY !
+SET_ENEMIES = (108, 525)             # Posição (x, y) da mensagem SET ENEMIES...
+KILLEM_ALL = (140, 525)              # Posição (x, y) da mensagem KILL'EM ALL
+SET_COUNTER = (282, 580)             # Posição (x, y) do número da contagem
+HIGH_SCORE = (0, 0)                  # Posição (x, y) da mensagem HIGH SCORE
+GAME_OVER = (0, 0)                   # Posição (x, y) da mensagem GAME OVER
 
 class Spaceship(pygame.sprite.Sprite):
     '''Classe que representa a nave do jogador'''
@@ -67,10 +73,10 @@ class Spaceship(pygame.sprite.Sprite):
                 self.rect[0] = self.center
                 self.reset_pos = 0
 
-    def shoot(self, laser_fx, explosion_fx, invaders, lasers):
+    def shoot(self, laser_fx):
         '''Função que representa a ação de atirar com a nave'''
         pygame.mixer.Sound.play(laser_fx)
-        return Laser(self.rect[0] + 33, self.rect[1] - 28, explosion_fx, invaders, lasers)
+        return Laser(self.rect[0] + 33, self.rect[1] - 28)
 
     def reset_position(self):
         '''Função que reinicia a posição da nave'''
@@ -86,7 +92,7 @@ class Spaceship(pygame.sprite.Sprite):
 
 class Laser(pygame.sprite.Sprite):
     '''Classe que representa o laser da nave'''
-    def __init__(self, pos_x, pos_y, sound, invaders_group, laser_group):
+    def __init__(self, pos_x, pos_y):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.image.load(
             f'{BASE_DIR}/assets/sprites/player/bullet.png'
@@ -96,15 +102,10 @@ class Laser(pygame.sprite.Sprite):
         self.rect[0] = pos_x
         self.rect[1] = pos_y
         self.speed = SPEED
-        self.laser_group = laser_group
-        self.invaders_group = invaders_group
-        self.explosion = sound
 
     def update(self):
         '''Função que representa o que acontece na trajetória do laser'''
         self.rect[1] -= self.speed
-        if pygame.sprite.groupcollide(self.laser_group, self.invaders_group, True, True, pygame.sprite.collide_mask):
-            pygame.mixer.Sound.play(self.explosion)
         if (((self.rect[1]) // 10) * 10) == -((self.get_height() // 10) * 10):
             self.kill()
 
@@ -118,20 +119,23 @@ class Laser(pygame.sprite.Sprite):
 
 class Invaders(pygame.sprite.Sprite):
     '''Classe que representa os inimigos'''
-    def __init__(self, alien, pos_x, pos_y):
+    def __init__(self, alien, pos_x, pos_y, sound, invaders_group, laser_group):
         pygame.sprite.Sprite.__init__(self)
         self.enemies = (
             (
                 pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/White-Enemy1.png').convert_alpha(),
-                pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/White-Enemy1_.png').convert_alpha()
+                pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/White-Enemy1_.png').convert_alpha(),
+                pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/White-Enemy-Burst.png').convert_alpha()
             ),
             (
                 pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/Green-Enemy2.png').convert_alpha(),
-                pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/Green-Enemy2_.png').convert_alpha()
+                pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/Green-Enemy2_.png').convert_alpha(),
+                pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/Green-Enemy-Burst.png').convert_alpha()
             ),
             (
                 pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/Yellow-Enemy3.png').convert_alpha(),
-                pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/Yellow-Enemy3_.png').convert_alpha()
+                pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/Yellow-Enemy3_.png').convert_alpha(),
+                pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/Yellow-Enemy-Burst.png').convert_alpha()
             )
         )
         self.enemy = self.enemies[alien]
@@ -146,11 +150,14 @@ class Invaders(pygame.sprite.Sprite):
         self.move_counter = 0
         self.move_direction = 1
         self.last_count = pygame.time.get_ticks()
+        self.laser_group = laser_group
+        self.invaders_group = invaders_group
+        self.explosion = sound
 
     def update(self):
         '''Função que representa como a nave inimiga se comporta em cada interação no jogo'''
         counter = pygame.time.get_ticks()
-        if counter - self.last_count > 300:
+        if counter - self.last_count > ENEMY_ANIMATION_TIME:
             self.current_image = (self.current_image + 1) % 2
             self.last_count = counter
         self.image = self.enemy[self.current_image]
@@ -159,18 +166,49 @@ class Invaders(pygame.sprite.Sprite):
         if abs(self.move_counter) > 75:
             self.move_direction *= -1
             self.move_counter *= self.move_direction
+        if pygame.sprite.groupcollide(self.invaders_group, self.laser_group, True, True, pygame.sprite.collide_mask):
+            pygame.mixer.Sound.play(self.explosion)
+            self.current_image = 2
 
-    def death(self, alien, pos_x, pos_y, sound):
+class Bullets(pygame.sprite.Sprite):
+    '''Classe que representa a bala do inimigo'''
+    def __init__(self, pos_x, pos_y):
+        pygame.sprite.Sprite.__init__(self)
         self.images = (
-            pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/White-Enemy-Burst.png').convert_alpha(),
-            pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/Green-Enemy-Burst.png').convert_alpha(),
-            pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/Yellow-Enemy-Burst.png').convert_alpha()
+            pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/bullet1.png').convert_alpha(),
+            pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/bullet2.png').convert_alpha(),
+            pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/bullet3.png').convert_alpha(),
+            pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/bullet4.png').convert_alpha(),
+            pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/bullet5.png').convert_alpha(),
+            pygame.image.load(f'{BASE_DIR}/assets/sprites/enemies/invaders/bullet6.png').convert_alpha()
         )
-        self.image = self.images[alien]
+        self.current_image = 0
+        self.image = self.images[self.current_image]
+        self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
-        self.rect.center = [pos_x, pos_y]
-        pygame.mixer.Sound.play(sound)
-        self.kill()
+        self.rect[0] = pos_x
+        self.rect[1] = pos_y
+        self.last_count = pygame.time.get_ticks()
+        self.speed = BULLET_SPEED
+
+    def update(self):
+        '''Função que representa o que acontece na trajetória da bala do inimigo'''
+        counter = pygame.time.get_ticks()
+        if counter - self.last_count > BULLET_ANIMATION_TIME:
+            self.current_image = (self.current_image + 1) % 2
+            self.last_count = counter
+        self.image = self.images[self.current_image]
+        self.rect[1] += self.speed
+        if (((self.rect[1]) // 10) * 10) == ((SCREEN_HEIGHT // 10) * 10):
+            self.kill()
+
+    def get_width(self):
+        '''Função que retorna a largura da bala do inimigo'''
+        return self.image.get_size()[0]
+
+    def get_height(self):
+        '''Função que retorna o comprimento da bala do inimigo'''
+        return self.image.get_size()[1]
 
 def main():
     '''Função principal que trata de toda a execução do jogo'''
@@ -247,16 +285,15 @@ def main():
     ship_group = pygame.sprite.Group()
     ship = Spaceship()
     ship_group.add(ship)
+    laser_group = pygame.sprite.Group()
     invaders_group = pygame.sprite.Group()
     def create_invaders(rows, cols):
         for row in range(rows):
             invader = randint(0, 2)
             for item in range(cols):
-                enemy = Invaders(invader, 100 + item * 100, 100 + row * 70)
+                enemy = Invaders(invader, 100 + item * 100, 100 + row * 50, sounds[1], invaders_group, laser_group)
                 invaders_group.add(enemy)
-    def has_invaders():
-        return len(invaders_group) != 0
-    laser_group = pygame.sprite.Group()
+    bullets_group = pygame.sprite.Group()
     # Criação do controle de tempo do jogo
     clock = pygame.time.Clock()
     # Laço da tela de abertura do jogo
@@ -281,10 +318,10 @@ def main():
         ship_group.draw(screen)
         pygame.display.update()
 
-    start = False
+    start_enemies = start = False
     level = 1
     countdown = 3
-    last_count = pygame.time.get_ticks()
+    last_count = laser_last_count = bullet_last_count = pygame.time.get_ticks()
     screen_limit_left = 0
     screen_limit_right = ((SCREEN_WIDTH - ship.get_width()) // 10) * 10
     screen_limit_bottom = ((SCREEN_HEIGHT - ship.get_height()) // 10) * 10
@@ -292,13 +329,13 @@ def main():
     def next_level():
         ship.reset_position()
         laser_group.empty()
-        if rows < 8:
+        bullets_group.empty()
+        if rows < MAX_ROWS:
             new_rows = rows + 1
         else:
-            new_rows = 8
+            new_rows = MAX_ROWS
         new_level = level + 1
         return new_level, new_rows
-
 
     while run:
         # Controle da velocidade do jogo
@@ -313,7 +350,10 @@ def main():
             if event.type == KEYDOWN:
                 # Teste para saber se a tecla é "BARRA DE ESPAÇO"
                 if event.key == K_SPACE and countdown == 0:
-                    laser_group.add(ship.shoot(sounds[2], sounds[1], invaders_group, laser_group))
+                    laser_counter = pygame.time.get_ticks()
+                    if laser_counter - laser_last_count > LASER_TIMING:
+                        laser_group.add(ship.shoot(sounds[2]))
+                        laser_last_count = laser_counter
 
         commands = pygame.key.get_pressed()
         # Teste para saber se a tecla é "SETA PARA A ESQUERDA"
@@ -330,9 +370,11 @@ def main():
         ship_group.update()
         laser_group.update()
         invaders_group.update()
+        bullets_group.update()
         ship_group.draw(screen)
         laser_group.draw(screen)
         invaders_group.draw(screen)
+        bullets_group.draw(screen)
         ship.rect[1] += START_SPEED if ((ship.rect[1] // 10) * 10) != screen_limit_bottom else 0
 
         if countdown != 0:
@@ -355,6 +397,8 @@ def main():
                     screen.blit(numbers[11], SET_COUNTER)
             if counter - last_count > 1000:
                 countdown -= 1
+                if countdown == 0:
+                    start_enemies = True
                 last_count = counter
 
         if (len(invaders_group) == 0) and (countdown == 2):
@@ -363,7 +407,16 @@ def main():
             level, rows = next_level()
             create_invaders(rows, 5)
             countdown = 3
+            start_enemies = False
 
+        if start_enemies and (len(bullets_group) <= MAX_BULLETS):
+            bullet_counter = pygame.time.get_ticks()
+            if bullet_counter - bullet_last_count > BULLET_TIMING:
+                attacking_invader = choice(invaders_group.sprites())
+                bullet = Bullets(attacking_invader.rect.centerx, attacking_invader.rect.bottom)
+                bullets_group.add(bullet)
+                bullet_last_count = bullet_counter
+        print(len(bullets_group))
         pygame.display.update()
 
 try:
