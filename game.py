@@ -34,17 +34,17 @@ ENEMY_ANIMATION_TIME = 300           # Tempo, em milissegundos, entre as trocas 
 BULLET_ANIMATION_TIME = 200          # Tempo, em milissegundos, entre as trocas das imagens das balas
 LASER_TIMING = 500                   # Tempo, em milissegundos, entre um disparo e outro
 BULLET_TIMING = 2 * LASER_TIMING     # Tempo, em milissegundos, entre uma bala e outra
-START_GAME = (0, 0)                  # Posição (x, y) da Splash Screen
-LOADING = (440, 10)
-GET_READY = (103, 525)               # Posição (x, y) da mensagem GET READY !
-INVADING = (103, 525)                # Posição (x, y) da mensagem SET ENEMIES...
+BACKGROUND = START_GAME = (0, 0)     # Posição (x, y) do Background e da Splash Screen
+LOADING = (440, 10)                  # Posição (x, y) da mensagem LOADING
+GET_READY = (103, 525)               # Posição (x, y) da mensagem GET READY
+INVADING = (103, 525)                # Posição (x, y) da mensagem INVADING
 KILLEM_ALL = (103, 525)              # Posição (x, y) da mensagem KILL'EM ALL
 GAME_OVER = (103, 525)               # Posição (x, y) da mensagem GAME OVER
 SET_COUNTER = (282, 580)             # Posição (x, y) do número da contagem
 HIGH_SCORE = (0, 0)                  # Posição (x, y) da mensagem HIGH SCORE
-VOLUME_BGM = 0.8
-FADEOUT = 1500
-VOLUME_FX = 0.4
+VOLUME_FX = 0.4                      # Volume dos efeitos especiais
+VOLUME_BGM = 0.8                     # Volume da música de fundo
+FADEOUT = 1500                       # Tempo de fade para para a música de fundo
 
 class Spaceship(pygame.sprite.Sprite):
     '''Classe que representa a nave do jogador'''
