@@ -4,7 +4,7 @@ Utilizando a biblioteca: PyGame
 
 Criado por: Carlos Alberto Morais Moura Filho
 Versão: 1.0
-Atualizado em: 21/05/2021
+Atualizado em: 22/05/2021
 '''
 # pylint: disable=no-member
 # pylint: disable=too-many-locals
@@ -217,7 +217,7 @@ class Bullets(pygame.sprite.Sprite):
     def __init__(self, ship, explosion, position, sound):
         pygame.sprite.Sprite.__init__(self)
         self.images = []
-        for i in range(1, 6):
+        for i in range(1, 7):
             self.images.append(pygame.image.load(
                 f'{BASE_DIR}/assets/sprites/enemies/invaders/bullet{i}.png'
             ).convert_alpha())
@@ -225,8 +225,8 @@ class Bullets(pygame.sprite.Sprite):
         self.image = self.images[self.current_image]
         self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
-        self.rect[0] = position[0]
-        self.rect[1] = position[1]
+        self.rect[0] = position[0] - (self.image.get_size()[0] // 2)
+        self.rect[1] = position[1] - (self.image.get_size()[1])
         self.last_count = pygame.time.get_ticks()
         self.speed = BULLET_SPEED
         self.ship_group = ship
@@ -399,7 +399,6 @@ def main():
     # Criação do controle de tempo do jogo
     clock = pygame.time.Clock()
     ship.rect[1] -= 400
-    play_bgm(0)
 
     # Laço da tela de abertura do jogo
     while splash:
@@ -407,6 +406,7 @@ def main():
         clock.tick(FPS)
         screen.blit(background, (0, 0))
         screen.blit(messages[0], START_GAME)
+        play_bgm(0)
         for event in pygame.event.get():
             if event.type == QUIT:
                 pygame.quit()
@@ -425,7 +425,8 @@ def main():
 
     start_enemies = start = False
     level = 1
-    gameover_cntdown = countdown = 3
+    gameover_cntdown = 4
+    countdown = 3
     last_count = laser_last_count = bullet_last_count = gameover_lstcnt = pygame.time.get_ticks()
     screen_limit_left = 0
     screen_limit_right = ((SCREEN_WIDTH - ship.get_width()) // 10) * 10
@@ -455,7 +456,7 @@ def main():
             # Evento que identifica a tecla pressionada
             if event.type == KEYDOWN:
                 # Teste para saber se a tecla é "BARRA DE ESPAÇO"
-                if event.key == K_SPACE and countdown == 0 and gameover_cntdown == 3:
+                if event.key == K_SPACE and countdown == 0 and len(ship_group) != 0:
                     laser_counter = pygame.time.get_ticks()
                     if laser_counter - laser_last_count > LASER_TIMING:
                         laser_group.add(ship.shoot(effects[2]))
@@ -527,15 +528,16 @@ def main():
                 bullet = Bullets(
                     ship_group,
                     explosion_group,
-                    (attacking_invader.rect.centerx - 15,
-                     attacking_invader.rect.bottom - (attacking_invader.get_height() // 2)),
-                     effects[0]
+                    (attacking_invader.rect.centerx, attacking_invader.rect.bottom),
+                    effects[0]
                 )
                 bullets_group.add(bullet)
                 bullet_last_count = bullet_counter
 
         if len(ship_group) == 0:
             gameover_cntr = pygame.time.get_ticks()
+            stop_bgm(FADEOUT)
+#            laser_group.empty()
             screen.blit(messages[5], GAME_OVER)
             if gameover_cntr - gameover_lstcnt > 1000:
                 gameover_cntdown -= 1
@@ -544,7 +546,7 @@ def main():
                 gameover_lstcnt = gameover_cntr
 
         pygame.display.update()
-main()
+
 try:
     while True:
         main()
