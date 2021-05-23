@@ -50,8 +50,8 @@ GAME_OVER = (103, 525)                   # Posição (x, y) da mensagem GAME OVE
 SET_COUNTER = (282, 580)                 # Posição (x, y) do número da contagem
 HIGH_SCORE = (0, 0)                      # Posição (x, y) da mensagem HIGH SCORE
 # Definições de áudio
-VOLUME_FX = 0.4                          # Volume dos efeitos especiais
-VOLUME_BGM = 0.8                         # Volume da música de fundo
+VOLUME_FX = 0.3                          # Volume dos efeitos especiais
+VOLUME_BGM = 0.6                         # Volume da música de fundo
 FADEOUT = 1500                           # Tempo de fade para parar a música de fundo
 
 class Spaceship(pygame.sprite.Sprite):
@@ -134,41 +134,19 @@ class Invaders(pygame.sprite.Sprite):
     '''Classe que representa os inimigos'''
     def __init__(self, alien, position, sound, check_collision_groups):
         pygame.sprite.Sprite.__init__(self)
-        self.enemies = (
-            (
-                pygame.image.load(
-                    f'{BASE_DIR}/assets/sprites/enemies/invaders/White-Enemy1.png'
-                ).convert_alpha(),
-                pygame.image.load(
-                    f'{BASE_DIR}/assets/sprites/enemies/invaders/White-Enemy1_.png'
-                ).convert_alpha(),
-                pygame.image.load(
-                    f'{BASE_DIR}/assets/sprites/enemies/invaders/White-Enemy-Burst.png'
-                ).convert_alpha()
-            ),
-            (
-                pygame.image.load(
-                    f'{BASE_DIR}/assets/sprites/enemies/invaders/Green-Enemy2.png'
-                ).convert_alpha(),
-                pygame.image.load(
-                    f'{BASE_DIR}/assets/sprites/enemies/invaders/Green-Enemy2_.png'
-                ).convert_alpha(),
-                pygame.image.load(
-                    f'{BASE_DIR}/assets/sprites/enemies/invaders/Green-Enemy-Burst.png'
-                ).convert_alpha()
-            ),
-            (
-                pygame.image.load(
-                    f'{BASE_DIR}/assets/sprites/enemies/invaders/Yellow-Enemy3.png'
-                ).convert_alpha(),
-                pygame.image.load(
-                    f'{BASE_DIR}/assets/sprites/enemies/invaders/Yellow-Enemy3_.png'
-                ).convert_alpha(),
-                pygame.image.load(
-                    f'{BASE_DIR}/assets/sprites/enemies/invaders/Yellow-Enemy-Burst.png'
-                ).convert_alpha()
+        self.enemies = []
+        for i in range(0,10):
+            self.enemies.append(
+                (
+                    pygame.image.load(
+                        f'{BASE_DIR}/assets/sprites/enemies/invaders/Enemy{i}.png'
+                    ).convert_alpha(),
+                    pygame.image.load(
+                        f'{BASE_DIR}/assets/sprites/enemies/invaders/Enemy{i}_.png'
+                    ).convert_alpha()
+
+                )
             )
-        )
         self.enemy = self.enemies[alien]
         self.current_image = 0
         self.image = self.enemy[self.current_image]
@@ -202,7 +180,7 @@ class Invaders(pygame.sprite.Sprite):
             self.invaders_group, self.laser_group, True, True, pygame.sprite.collide_mask
             ):
             pygame.mixer.Sound.play(self.explosion)
-            self.current_image = 2
+            #self.current_image = 2
 
     def get_width(self):
         '''Função que retorna a largura da nave do invasor'''
@@ -311,7 +289,7 @@ def main():
     pygame.display.set_icon(icon)
     pygame.display.set_caption(CAPTION)
     # Contador de pontuação do jogo
-    score = 0
+    #score = 0
     # Testa o sistema em que o jogo está rodando
     sound_type = 'wav' if 'win' in plat else 'ogg'
     # Carregamento dos sons do jogo
@@ -342,6 +320,7 @@ def main():
         pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/kill\'em_all.png').convert_alpha(),
         pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/game_over.png').convert_alpha(),
         pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/high_score.png').convert_alpha()
+#        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/level.png').convert_alpha()
     )
     # Criação dos números
     numbers = []
@@ -370,8 +349,8 @@ def main():
     laser_group = pygame.sprite.Group()
     invaders_group = pygame.sprite.Group()
     def create_invaders(rows, cols):
+        invader = rows - 1
         for row in range(rows):
-            invader = randint(0, 2)
             for item in range(cols):
                 enemy = Invaders(
                     invader,
@@ -380,6 +359,7 @@ def main():
                     (invaders_group, laser_group)
                 )
                 invaders_group.add(enemy)
+            invader -= 1
     bullets_group = pygame.sprite.Group()
     def play_bgm(track):
         if not pygame.mixer.music.get_busy():
