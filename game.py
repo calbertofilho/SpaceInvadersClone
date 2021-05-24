@@ -173,10 +173,10 @@ class Explosion(pygame.sprite.Sprite):
 
 class Invaders(pygame.sprite.Sprite):
     '''Classe que representa os inimigos'''
-    def __init__(self, alien, position, sound, check_collision_groups):
+    def __init__(self, alien, position, sound, check_collision_groups, burst):
         pygame.sprite.Sprite.__init__(self)
         self.enemies = []
-        for i in range(0,10):
+        for i in range(0, 10):
             self.enemies.append(
                 (
                     pygame.image.load(
@@ -202,8 +202,10 @@ class Invaders(pygame.sprite.Sprite):
         self.last_count = pygame.time.get_ticks()
         self.invaders_group = check_collision_groups[0]
         self.laser_group = check_collision_groups[1]
+        self.burst_group = burst
         self.explosion = sound
         self.explosion.set_volume(VOLUME_FX)
+        self.center = (self.rect.centerx, self.rect.bottom)
 
     def update(self):
         '''Função que representa como a nave inimiga se comporta em cada interação no jogo'''
@@ -221,7 +223,9 @@ class Invaders(pygame.sprite.Sprite):
             self.invaders_group, self.laser_group, True, True, pygame.sprite.collide_mask
             ):
             pygame.mixer.Sound.play(self.explosion)
-            #self.current_image = 2
+            burst = Burst(self.center)
+            self.burst_group.add(burst)
+            # burst do inimigo na posição do laser que atingiu
 
     def get_width(self):
         '''Função que retorna a largura da nave do invasor'''
@@ -377,7 +381,40 @@ class Bomb(pygame.sprite.Sprite):
 
 class Burst(pygame.sprite.Sprite):
     '''Classe que representa a explosão dos inimigos'''
-    pass
+    def __init__(self, position):
+        pygame.sprite.Sprite.__init__(self)
+        self.images = []
+        for i in range(1, 14):
+            self.images.append(pygame.image.load(
+                f'{BASE_DIR}/assets/sprites/burst/frm{i}.png'
+            ).convert_alpha())
+        self.current_image = 0
+        self.image = self.images[self.current_image]
+        self.mask = pygame.mask.from_surface(self.image)
+        self.rect = self.image.get_rect()
+        self.rect.center = position
+        self.counter = 0
+
+    def update(self):
+        '''Função que representa o comportamento da animação da explosão do inimigo'''
+        explosion_speed = 1
+        # Atualização da animação da explosão
+        self.counter += 1
+        if self.counter >= explosion_speed and self.current_image < len(self.images) - 1:
+            self.counter = 0
+            self.current_image += 1
+            self.image = self.images[self.current_image]
+        # Se a animação terminar, exclui a explosão
+        if self.current_image >= len(self.images) - 1 and self.counter >= explosion_speed:
+            self.kill()
+
+    def get_width(self):
+        '''Função que retorna a largura do frame da explosão do inimigo'''
+        return self.image.get_size()[0]
+
+    def get_height(self):
+        '''Função que retorna o comprimento do frame da explosão do inimigo'''
+        return self.image.get_size()[1]
 
 def main():
     '''Função principal que trata de toda a execução do jogo'''
@@ -465,7 +502,8 @@ def main():
                     invader,
                     (100 + item * 100, 100 + row * 50),
                     effects[1],
-                    (invaders_group, laser_group)
+                    (invaders_group, laser_group),
+                    burst_group
                 )
                 invaders_group.add(enemy)
             invader -= 1
@@ -495,6 +533,7 @@ def main():
     mothership_group = pygame.sprite.Group()
     bomb_group = pygame.sprite.Group()
     explosion_group = pygame.sprite.Group()
+    burst_group = pygame.sprite.Group()
     # Criação do controle de tempo do jogo
     clock = pygame.time.Clock()
     ship.rect[1] -= 400
@@ -579,6 +618,7 @@ def main():
         screen.blit(background, (0, 0))
         ship_group.update()
         explosion_group.update()
+        burst_group.update()
         laser_group.update()
         invaders_group.update()
         bullets_group.update()
@@ -586,6 +626,7 @@ def main():
         bomb_group.update()
         ship_group.draw(screen)
         explosion_group.draw(screen)
+        burst_group.draw(screen)
         laser_group.draw(screen)
         invaders_group.draw(screen)
         bullets_group.draw(screen)
@@ -702,7 +743,7 @@ def main():
                 gameover_lstcnt = gameover_cntr
 
         pygame.display.update()
-
+main()
 try:
     while True:
         main()
