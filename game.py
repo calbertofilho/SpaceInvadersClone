@@ -20,7 +20,7 @@ from sys import platform as plat, exit as ext, exc_info as info
 import pickle
 from math import ceil
 import pygame
-from pygame.constants import ( QUIT, KEYDOWN, K_LEFT, K_RIGHT, K_ESCAPE, K_SPACE )
+from pygame.constants import ( K_PAUSE, QUIT, KEYDOWN, K_LEFT, K_RIGHT, K_ESCAPE, K_SPACE )
 
 # Constantes
 BASE_DIR = path.dirname(__file__)        # Diretorio do jogo
@@ -41,14 +41,18 @@ ENEMY_ANIMATION_TIME = 300               # Tempo, em ms, entre as trocas das ima
 BULLET_ANIMATION_TIME = 200              # Tempo, em ms, entre as trocas das imagens das balas
 BULLET_TIMING = 2 * LASER_TIMING         # Tempo, em ms, entre uma bala e outra
 # Definições das mensagens
-BACKGROUND = START_GAME = (0, 0)         # Posição (x, y) do Background e da Splash Screen
-LOADING = (440, 10)                      # Posição (x, y) da mensagem LOADING
-GET_READY = (103, 525)                   # Posição (x, y) da mensagem GET READY
-INVADING = (103, 525)                    # Posição (x, y) da mensagem INVADING
-KILLEM_ALL = (103, 525)                  # Posição (x, y) da mensagem KILL'EM ALL
-GAME_OVER = (103, 525)                   # Posição (x, y) da mensagem GAME OVER
-SET_COUNTER = (282, 580)                 # Posição (x, y) do número da contagem
-HIGH_SCORE = (0, 0)                      # Posição (x, y) da mensagem HIGH SCORE
+BACKGROUND = START_GAME = PAUSE_GAME = (0, 0)  # Posição (x, y) do Background e da Splash Screen
+LOADING = (459, 10)                            # Posição (x, y) da mensagem LOADING
+GET_READY = (103, 525)                         # Posição (x, y) da mensagem GET READY
+INVADING = (103, 525)                          # Posição (x, y) da mensagem INVADING
+KILLEM_ALL = (103, 525)                        # Posição (x, y) da mensagem KILL'EM ALL
+GAME_OVER = (103, 525)                         # Posição (x, y) da mensagem GAME OVER
+LEVEL = (199, 399)                             # Posição (x, y) da mensagem LEVEL
+LVL_NUMBER = (284, 457)                        # Posição (x, y) do número do LEVEL
+LEVEL_PLAY = (10, 10)                          # Posição (x, y) da mensagem LEVEL na tela do jogo
+LVL_PLAY_NUMBER = (113, 10)                    # Posição (x, y) do número do LEVEL na tela do jogo
+SET_COUNTER = (282, 580)                       # Posição (x, y) do número da contagem
+HIGH_SCORE = (0, 0)                            # Posição (x, y) da mensagem HIGH SCORE
 # Definições de áudio
 VOLUME_FX = 0.3                          # Volume dos efeitos especiais
 VOLUME_BGM = 0.6                         # Volume da música de fundo
@@ -128,6 +132,43 @@ class Laser(pygame.sprite.Sprite):
 
     def get_height(self):
         '''Função que retorna o comprimento do laser'''
+        return self.image.get_size()[1]
+
+class Explosion(pygame.sprite.Sprite):
+    '''Classe que representa a explosão da nave do jogador'''
+    def __init__(self, position):
+        pygame.sprite.Sprite.__init__(self)
+        self.images = []
+        for i in range(1, 74):
+            self.images.append(pygame.image.load(
+                f'{BASE_DIR}/assets/sprites/explosion/frm{i}.png'
+            ).convert_alpha())
+        self.current_image = 0
+        self.image = self.images[self.current_image]
+        self.mask = pygame.mask.from_surface(self.image)
+        self.rect = self.image.get_rect()
+        self.rect.center = position
+        self.counter = 0
+
+    def update(self):
+        '''Função que representa o comportamento da animação da explosão'''
+        explosion_speed = 1
+        # Atualização da animação da explosão
+        self.counter += 1
+        if self.counter >= explosion_speed and self.current_image < len(self.images) - 1:
+            self.counter = 0
+            self.current_image += 1
+            self.image = self.images[self.current_image]
+        # Se a animação terminar, exclui a explosão
+        if self.current_image >= len(self.images) - 1 and self.counter >= explosion_speed:
+            self.kill()
+
+    def get_width(self):
+        '''Função que retorna a largura do frame da explosão'''
+        return self.image.get_size()[0]
+
+    def get_height(self):
+        '''Função que retorna o comprimento do frame da explosão'''
         return self.image.get_size()[1]
 
 class Invaders(pygame.sprite.Sprite):
@@ -216,6 +257,103 @@ class Bullets(pygame.sprite.Sprite):
         '''Função que representa o que acontece na trajetória da bala do inimigo'''
         counter = pygame.time.get_ticks()
         if counter - self.last_count > BULLET_ANIMATION_TIME:
+            self.current_image = (self.current_image + 1) % len(self.images)
+            self.last_count = counter
+        self.image = self.images[self.current_image]
+        self.rect[1] += self.speed
+        if (((self.rect[1]) // 10) * 10) == ((SCREEN_HEIGHT // 10) * 10):
+            self.kill()
+        if pygame.sprite.spritecollide(self, self.ship_group, False, pygame.sprite.collide_mask):
+            self.kill()
+            pygame.mixer.Sound.play(self.explosion)
+            explosion = Explosion(self.ship_group.sprites()[0].rect.center)
+            self.explosion_group.add(explosion)
+            self.ship_group.empty()
+
+    def get_width(self):
+        '''Função que retorna a largura da bala do inimigo'''
+        return self.image.get_size()[0]
+
+    def get_height(self):
+        '''Função que retorna o comprimento da bala do inimigo'''
+        return self.image.get_size()[1]
+
+class Mothership(pygame.sprite.Sprite):
+    '''Classe que representa a nave mãe dos inimigos'''
+    def __init__(self, sound, check_collision_groups):
+        pygame.sprite.Sprite.__init__(self)
+        self.enemy = (
+            pygame.image.load(
+                f'{BASE_DIR}/assets/sprites/enemies/mothership/mothership.png'
+            ).convert_alpha(),
+            pygame.image.load(
+                f'{BASE_DIR}/assets/sprites/enemies/mothership/mothership_.png'
+            ).convert_alpha()
+        )
+        self.current_image = 0
+        self.image = self.enemy[self.current_image]
+        self.mask = pygame.mask.from_surface(self.image)
+        self.rect = self.image.get_rect()
+        self.rect.x = -self.image.get_width()
+        self.rect.y = 5 + self.image.get_height() // 2
+        self.last_count = pygame.time.get_ticks()
+        self.invaders_group = check_collision_groups[0]
+        self.laser_group = check_collision_groups[1]
+        self.explosion = sound
+        self.explosion.set_volume(VOLUME_FX)
+
+    def get_width(self):
+        '''Função que retorna a largura da nave mãe'''
+        return self.image.get_size()[0]
+
+    def get_height(self):
+        '''Função que retorna o comprimento da nave mãe'''
+        return self.image.get_size()[1]
+
+    def update(self):
+        '''Função que representa como a nave mãe se comporta em cada interação no jogo'''
+        counter = pygame.time.get_ticks()
+        if counter - self.last_count > ENEMY_ANIMATION_TIME:
+            self.current_image = (self.current_image + 1) % 2
+            self.last_count = counter
+            self.image = self.enemy[self.current_image]
+        self.rect.x += SPEED
+        if ((self.rect.x // 10) * 10) == SCREEN_WIDTH:
+            self.kill()
+        if pygame.sprite.groupcollide(
+            self.invaders_group, self.laser_group, True, True, pygame.sprite.collide_mask
+            ):
+            pygame.mixer.Sound.play(self.explosion)
+
+class Bomb(pygame.sprite.Sprite):
+    '''Classe que representa a bomba da nave mãe dos inimigos'''
+    def __init__(self, ship, explosion, position, sound):
+        pygame.sprite.Sprite.__init__(self)
+        self.images = (
+            pygame.image.load(
+                f'{BASE_DIR}/assets/sprites/enemies/mothership/bomb.png'
+            ).convert_alpha(),
+            pygame.image.load(
+                f'{BASE_DIR}/assets/sprites/enemies/mothership/bomb_.png'
+            ).convert_alpha()
+        )
+        self.current_image = 0
+        self.image = self.images[self.current_image]
+        self.mask = pygame.mask.from_surface(self.image)
+        self.rect = self.image.get_rect()
+        self.rect[0] = position[0] - (self.image.get_size()[0] // 2)
+        self.rect[1] = position[1] - (self.image.get_size()[1])
+        self.last_count = pygame.time.get_ticks()
+        self.speed = BULLET_SPEED * 2
+        self.ship_group = ship
+        self.explosion_group = explosion
+        self.explosion = sound
+        self.explosion.set_volume(VOLUME_FX)
+
+    def update(self):
+        '''Função que representa o que acontece na trajetória da bala do inimigo'''
+        counter = pygame.time.get_ticks()
+        if counter - self.last_count > BULLET_ANIMATION_TIME:
             self.current_image = (self.current_image + 1) % 2
             self.last_count = counter
         self.image = self.images[self.current_image]
@@ -237,42 +375,9 @@ class Bullets(pygame.sprite.Sprite):
         '''Função que retorna o comprimento da bala do inimigo'''
         return self.image.get_size()[1]
 
-class Explosion(pygame.sprite.Sprite):
-    '''Classe que representa a explosão da nave do jogador'''
-    def __init__(self, position):
-        pygame.sprite.Sprite.__init__(self)
-        self.images = []
-        for i in range(1, 74):
-            self.images.append(pygame.image.load(
-                f'{BASE_DIR}/assets/sprites/explosion/frm{i}.png'
-            ).convert_alpha())
-        self.current_image = 0
-        self.image = self.images[self.current_image]
-        self.mask = pygame.mask.from_surface(self.image)
-        self.rect = self.image.get_rect()
-        self.rect.center = position
-        self.counter = 0
-
-    def update(self):
-        '''Função que representa o comportamento da animação da explosão'''
-        explosion_speed = 1
-        # Atualização da animação da explosão
-        self.counter += 1
-        if self.counter >= explosion_speed and self.current_image < len(self.images) - 1:
-            self.counter = 0
-            self.current_image += 1
-            self.image = self.images[self.current_image]
-        # Se a animação terminar, exclui a explosão
-        if self.current_image >= len(self.images) - 1 and self.counter >= explosion_speed:
-            self.kill()
-
-    def get_width(self):
-        '''Função que retorna a largura do frame da explosão'''
-        return self.image.get_size()[0]
-
-    def get_height(self):
-        '''Função que retorna o comprimento do frame da explosão'''
-        return self.image.get_size()[1]
+class Burst(pygame.sprite.Sprite):
+    '''Classe que representa a explosão dos inimigos'''
+    pass
 
 def main():
     '''Função principal que trata de toda a execução do jogo'''
@@ -289,7 +394,8 @@ def main():
     pygame.display.set_icon(icon)
     pygame.display.set_caption(CAPTION)
     # Contador de pontuação do jogo
-    #score = 0
+    score = 0
+    paused = False
     # Testa o sistema em que o jogo está rodando
     sound_type = 'wav' if 'win' in plat else 'ogg'
     # Carregamento dos sons do jogo
@@ -319,8 +425,10 @@ def main():
         pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/invading.png').convert_alpha(),
         pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/kill\'em_all.png').convert_alpha(),
         pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/game_over.png').convert_alpha(),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/high_score.png').convert_alpha()
-#        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/level.png').convert_alpha()
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/high_score.png').convert_alpha(),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/level_start.png').convert_alpha(),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/level_play.png').convert_alpha(),
+        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/pause_game.png').convert_alpha()
     )
     # Criação dos números
     numbers = []
@@ -348,6 +456,7 @@ def main():
     ship_group.add(ship)
     laser_group = pygame.sprite.Group()
     invaders_group = pygame.sprite.Group()
+    mothership_come = -1
     def create_invaders(rows, cols):
         invader = rows - 1
         for row in range(rows):
@@ -360,12 +469,20 @@ def main():
                 )
                 invaders_group.add(enemy)
             invader -= 1
+        return randint(1, len(invaders_group) - 1)
     bullets_group = pygame.sprite.Group()
     def play_bgm(track):
         if not pygame.mixer.music.get_busy():
             pygame.mixer.music.load(bgm[track])
             pygame.mixer.music.set_volume(VOLUME_BGM)
             pygame.mixer.music.play()
+    def pause_bgm(state):
+        if pygame.mixer.music.get_busy():
+            if state is True:
+                pygame.mixer.music.pause()
+        else:
+            if state is False:
+                pygame.mixer.music.unpause()
     def stop_bgm(delay):
         lstcnt = cnt = pygame.time.get_ticks()
         cntdown = 1 if (delay < 1000) else int((ceil(delay // 10) * 10) / 1000)
@@ -375,6 +492,8 @@ def main():
             if cntdown == 0:
                 pygame.mixer.music.stop()
             lstcnt = cnt
+    mothership_group = pygame.sprite.Group()
+    bomb_group = pygame.sprite.Group()
     explosion_group = pygame.sprite.Group()
     # Criação do controle de tempo do jogo
     clock = pygame.time.Clock()
@@ -449,6 +568,10 @@ def main():
         # Teste para saber se a tecla é "SETA PARA A DIREITA"
         if commands[K_RIGHT] and countdown == 0:
             ship.rect[0] += SPEED if ((ship.rect[0] // 10) * 10) != screen_limit_right else 0
+        # Teste para saber se a tecla é "PAUSE"
+        if commands[K_PAUSE] and countdown == 0 and len(ship_group) != 0:
+            paused = True
+            pause_bgm(paused)
 
         background = backgrounds[level]
         background = pygame.transform.scale(background, (SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -459,17 +582,23 @@ def main():
         laser_group.update()
         invaders_group.update()
         bullets_group.update()
+        mothership_group.update()
+        bomb_group.update()
         ship_group.draw(screen)
         explosion_group.draw(screen)
         laser_group.draw(screen)
         invaders_group.draw(screen)
         bullets_group.draw(screen)
+        mothership_group.draw(screen)
+        bomb_group.draw(screen)
         ship.rect[1] += START_SPEED if ((ship.rect[1] // 10) * 10) != screen_limit_bottom else 0
 
         if countdown != 0:
             counter = pygame.time.get_ticks()
             if level == 1:
                 screen.blit(messages[1], LOADING)
+                screen.blit(messages[7], LEVEL)
+                screen.blit(numbers[10 + level], LVL_NUMBER)
                 if countdown >= 3:
                     screen.blit(messages[2], GET_READY)
                 elif countdown >= 2:
@@ -479,6 +608,8 @@ def main():
                     screen.blit(messages[4], KILLEM_ALL)
             else:
                 screen.blit(messages[1], LOADING)
+                screen.blit(messages[7], LEVEL)
+                screen.blit(numbers[10 + level], LVL_NUMBER)
                 screen.blit(messages[2], GET_READY)
                 if countdown >= 3:
                     screen.blit(numbers[13], SET_COUNTER)
@@ -494,10 +625,10 @@ def main():
                 last_count = counter
 
         if (len(invaders_group) == 0) and (countdown == 2):
-            create_invaders(rows, 5)
+            mothership_come = create_invaders(rows, 5)
         if start and (len(invaders_group) == 0):
             level, rows = next_level()
-            create_invaders(rows, 5)
+            mothership_come = create_invaders(rows, 5)
             countdown = 4
             start_enemies = False
 
@@ -513,11 +644,56 @@ def main():
                 )
                 bullets_group.add(bullet)
                 bullet_last_count = bullet_counter
+            if len(invaders_group) == mothership_come:
+                mothership = Mothership(
+                        effects[1],
+                        (mothership_group, laser_group)
+                )
+                mothership_group.add(mothership)
+                mothership_come = -1
+
+        if start_enemies and countdown == 0:
+            screen.blit(messages[8], LEVEL_PLAY)
+            screen.blit(numbers[level], LVL_PLAY_NUMBER)
+            screen.blit(numbers[score], (SCREEN_WIDTH - numbers[score].get_width() - 10, 10))
+
+        while paused:
+            screen.blit(background, (0, 0))
+            screen.blit(messages[9], PAUSE_GAME)
+            screen.blit(messages[8], LEVEL_PLAY)
+            screen.blit(numbers[level], LVL_PLAY_NUMBER)
+            screen.blit(numbers[score], (SCREEN_WIDTH - numbers[score].get_width() - 10, 10))
+            for event in pygame.event.get():
+                # Evento que fecha a janela
+                if event.type == QUIT:
+                    pygame.quit()
+                    ext()
+                # Evento que identifica a tecla pressionada
+                if event.type == KEYDOWN:
+                    # Teste para saber se a tecla é "ESCAPE"
+                    if event.key == K_ESCAPE:
+                        pygame.quit()
+                        ext()
+                    # Teste para saber se a tecla é "SPACE"
+                    if event.key == K_SPACE:
+                        paused = False
+                        pause_bgm(paused)
+            pygame.display.update()
+
+        if (len(mothership_group) > 0) and (len(bomb_group) == 0):
+            shot_position = (randint(0, SCREEN_WIDTH - (mothership.get_width() // 2)) // 10) * 10
+            if shot_position == (mothership.rect.x // 10) * 10:
+                bomb = Bomb(
+                    ship_group,
+                    explosion_group,
+                    (mothership.rect.centerx, mothership.rect.bottom),
+                    effects[0]
+                )
+                bomb_group.add(bomb)
 
         if len(ship_group) == 0:
             gameover_cntr = pygame.time.get_ticks()
             stop_bgm(FADEOUT)
-#            laser_group.empty()
             screen.blit(messages[5], GAME_OVER)
             if gameover_cntr - gameover_lstcnt > 1000:
                 gameover_cntdown -= 1
