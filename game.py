@@ -22,6 +22,7 @@ from math import ceil
 import pygame
 from pygame.constants import ( K_PAUSE, QUIT, KEYDOWN, K_LEFT, K_RIGHT, K_ESCAPE, K_SPACE )
 
+SCORE = 0
 # Constantes
 BASE_DIR = path.dirname(__file__)        # Diretorio do jogo
 # Definições da tela
@@ -173,7 +174,7 @@ class Explosion(pygame.sprite.Sprite):
 
 class Invaders(pygame.sprite.Sprite):
     '''Classe que representa os inimigos'''
-    def __init__(self, alien, position, sound, check_collision_groups, burst):
+    def __init__(self, alien, position, sound, groups):
         pygame.sprite.Sprite.__init__(self)
         self.enemies = []
         for i in range(0, 10):
@@ -200,12 +201,12 @@ class Invaders(pygame.sprite.Sprite):
         self.move_counter = 0
         self.move_direction = 1
         self.last_count = pygame.time.get_ticks()
-        self.invaders_group = check_collision_groups[0]
-        self.laser_group = check_collision_groups[1]
-        self.burst_group = burst
+        self.invaders_group = groups[0]
+        self.laser_group = groups[1]
+        self.burst_group = groups[2]
         self.explosion = sound
         self.explosion.set_volume(VOLUME_FX)
-        self.center = (self.rect.centerx, self.rect.bottom)
+        self.value = 5
 
     def update(self):
         '''Função que representa como a nave inimiga se comporta em cada interação no jogo'''
@@ -219,13 +220,12 @@ class Invaders(pygame.sprite.Sprite):
         if abs(self.move_counter) > 75:
             self.move_direction *= -1
             self.move_counter *= self.move_direction
-        if pygame.sprite.groupcollide(
-            self.invaders_group, self.laser_group, True, True, pygame.sprite.collide_mask
-            ):
+        if pygame.sprite.spritecollide(self, self.laser_group, True, pygame.sprite.collide_mask):
             pygame.mixer.Sound.play(self.explosion)
-            burst = Burst(self.center)
+            set_score(self.value)
+            burst = Burst(self.rect.center)
             self.burst_group.add(burst)
-            # burst do inimigo na posição do laser que atingiu
+            self.kill()
 
     def get_width(self):
         '''Função que retorna a largura da nave do invasor'''
@@ -284,7 +284,7 @@ class Bullets(pygame.sprite.Sprite):
 
 class Mothership(pygame.sprite.Sprite):
     '''Classe que representa a nave mãe dos inimigos'''
-    def __init__(self, sound, check_collision_groups):
+    def __init__(self, sound, groups):
         pygame.sprite.Sprite.__init__(self)
         self.enemy = (
             pygame.image.load(
@@ -292,6 +292,9 @@ class Mothership(pygame.sprite.Sprite):
             ).convert_alpha(),
             pygame.image.load(
                 f'{BASE_DIR}/assets/sprites/enemies/mothership/mothership_.png'
+            ).convert_alpha(),
+            pygame.image.load(
+                f'{BASE_DIR}/assets/sprites/enemies/mothership/mothership-burst.png'
             ).convert_alpha()
         )
         self.current_image = 0
@@ -301,10 +304,12 @@ class Mothership(pygame.sprite.Sprite):
         self.rect.x = -self.image.get_width()
         self.rect.y = 5 + self.image.get_height() // 2
         self.last_count = pygame.time.get_ticks()
-        self.invaders_group = check_collision_groups[0]
-        self.laser_group = check_collision_groups[1]
+        self.invaders_group = groups[0]
+        self.laser_group = groups[1]
+        self.burst_group = groups[2]
         self.explosion = sound
         self.explosion.set_volume(VOLUME_FX)
+        self.value = 10
 
     def get_width(self):
         '''Função que retorna a largura da nave mãe'''
@@ -324,10 +329,12 @@ class Mothership(pygame.sprite.Sprite):
         self.rect.x += SPEED
         if ((self.rect.x // 10) * 10) == SCREEN_WIDTH:
             self.kill()
-        if pygame.sprite.groupcollide(
-            self.invaders_group, self.laser_group, True, True, pygame.sprite.collide_mask
-            ):
+        if pygame.sprite.spritecollide(self, self.laser_group, True, pygame.sprite.collide_mask):
             pygame.mixer.Sound.play(self.explosion)
+            set_score(self.value)
+            burst = Burst(self.rect.center)
+            self.burst_group.add(burst)
+            self.kill()
 
 class Bomb(pygame.sprite.Sprite):
     '''Classe que representa a bomba da nave mãe dos inimigos'''
@@ -416,6 +423,20 @@ class Burst(pygame.sprite.Sprite):
         '''Função que retorna o comprimento do frame da explosão do inimigo'''
         return self.image.get_size()[1]
 
+def set_score(value):
+    global SCORE
+    SCORE += value
+
+def draw_score(sface, nums):
+    value = list(str(SCORE))
+    while len(value) != 5:
+        value.insert(0, 0)
+    sface.blit(nums[int(value[0])], (SCREEN_WIDTH - 95, 10))
+    sface.blit(nums[int(value[1])], (SCREEN_WIDTH - 78, 10))
+    sface.blit(nums[int(value[2])], (SCREEN_WIDTH - 61, 10))
+    sface.blit(nums[int(value[3])], (SCREEN_WIDTH - 44, 10))
+    sface.blit(nums[int(value[4])], (SCREEN_WIDTH - 27, 10))
+
 def main():
     '''Função principal que trata de toda a execução do jogo'''
     # Centraliza a janela do jogo no monitor
@@ -431,7 +452,6 @@ def main():
     pygame.display.set_icon(icon)
     pygame.display.set_caption(CAPTION)
     # Contador de pontuação do jogo
-    score = 0
     paused = False
     # Testa o sistema em que o jogo está rodando
     sound_type = 'wav' if 'win' in plat else 'ogg'
@@ -452,7 +472,8 @@ def main():
     effects = (
         pygame.mixer.Sound(f'{BASE_DIR}/assets/sounds/fx/{sound_type}/death.{sound_type}'),
         pygame.mixer.Sound(f'{BASE_DIR}/assets/sounds/fx/{sound_type}/explosion.{sound_type}'),
-        pygame.mixer.Sound(f'{BASE_DIR}/assets/sounds/fx/{sound_type}/shot.{sound_type}')
+        pygame.mixer.Sound(f'{BASE_DIR}/assets/sounds/fx/{sound_type}/shot.{sound_type}'),
+        pygame.mixer.Sound(f'{BASE_DIR}/assets/sounds/fx/{sound_type}/burst.{sound_type}')
     )
     # Criação das mensagens do jogo
     messages = (
@@ -501,9 +522,8 @@ def main():
                 enemy = Invaders(
                     invader,
                     (100 + item * 100, 100 + row * 50),
-                    effects[1],
-                    (invaders_group, laser_group),
-                    burst_group
+                    effects[3],
+                    (invaders_group, laser_group, burst_group)
                 )
                 invaders_group.add(enemy)
             invader -= 1
@@ -575,6 +595,8 @@ def main():
         ship.reset_position()
         laser_group.empty()
         bullets_group.empty()
+        mothership_group.empty()
+        set_score(50)
         if rows < MAX_ENEMIES_ROWS:
             new_rows = rows + 1
         else:
@@ -688,7 +710,7 @@ def main():
             if len(invaders_group) == mothership_come:
                 mothership = Mothership(
                         effects[1],
-                        (mothership_group, laser_group)
+                        (mothership_group, laser_group, burst_group)
                 )
                 mothership_group.add(mothership)
                 mothership_come = -1
@@ -696,14 +718,14 @@ def main():
         if start_enemies and countdown == 0:
             screen.blit(messages[8], LEVEL_PLAY)
             screen.blit(numbers[level], LVL_PLAY_NUMBER)
-            screen.blit(numbers[score], (SCREEN_WIDTH - numbers[score].get_width() - 10, 10))
+            draw_score(screen, numbers)
 
         while paused:
             screen.blit(background, (0, 0))
             screen.blit(messages[9], PAUSE_GAME)
             screen.blit(messages[8], LEVEL_PLAY)
             screen.blit(numbers[level], LVL_PLAY_NUMBER)
-            screen.blit(numbers[score], (SCREEN_WIDTH - numbers[score].get_width() - 10, 10))
+            draw_score(screen, numbers)
             for event in pygame.event.get():
                 # Evento que fecha a janela
                 if event.type == QUIT:
