@@ -437,6 +437,13 @@ def draw_score(sface, nums):
     sface.blit(nums[int(value[3])], (SCREEN_WIDTH - 44, 10))
     sface.blit(nums[int(value[4])], (SCREEN_WIDTH - 27, 10))
 
+def close_game():
+    '''Função que encerra todas as bibliotecas e fecha o jogo'''
+    pygame.display.quit()
+    pygame.mixer.quit()
+    pygame.quit()
+    ext()
+
 def main():
     '''Função principal que trata de toda a execução do jogo'''
     # Centraliza a janela do jogo no monitor
@@ -567,12 +574,10 @@ def main():
         play_bgm(0)
         for event in pygame.event.get():
             if event.type == QUIT:
-                pygame.quit()
-                ext()
+                close_game()
             if event.type == KEYDOWN:
                 if event.key == K_ESCAPE:
-                    pygame.quit()
-                    ext()
+                    close_game()
                 if event.key == K_SPACE:
                     splash = False
                     run = True
@@ -611,8 +616,7 @@ def main():
         for event in pygame.event.get():
             # Evento que fecha a janela
             if event.type == QUIT:
-                pygame.quit()
-                ext()
+                close_game()
             # Evento que identifica a tecla pressionada
             if event.type == KEYDOWN:
                 # Teste para saber se a tecla é "BARRA DE ESPAÇO"
@@ -729,14 +733,12 @@ def main():
             for event in pygame.event.get():
                 # Evento que fecha a janela
                 if event.type == QUIT:
-                    pygame.quit()
-                    ext()
+                    close_game()
                 # Evento que identifica a tecla pressionada
                 if event.type == KEYDOWN:
                     # Teste para saber se a tecla é "ESCAPE"
                     if event.key == K_ESCAPE:
-                        pygame.quit()
-                        ext()
+                        close_game()
                     # Teste para saber se a tecla é "SPACE"
                     if event.key == K_SPACE:
                         paused = False
@@ -767,13 +769,28 @@ def main():
         pygame.display.update()
 
 try:
-    while True:
-        main()
-except (ValueError, TypeError, ZeroDivisionError) as exc:
-    print(f"Oops! {exc.__class__} occurred.\n{exc.args}")
-else:
-    if info()[0] is not None:
-        print(f"Oops! {info()[0]} occurred.")
+    if __name__ == "__main__":
+        while True:
+            main()
+except SyntaxError as syntax_exception:
+    print(f'Oops! Ocorreu um erro de sintaxe no código.\n\
+        __class__ = {syntax_exception.__class__}\n\
+        __doc__ = {syntax_exception.__doc__}\n\
+        args = {syntax_exception.args}')
+except (ValueError, ZeroDivisionError) as value_exception:
+    print(f'Oops! Ocorreu um erro de valores.\n\
+        __class__ = {value_exception.__class__}\n\
+        __doc__ = {value_exception.__doc__}\n\
+        args = {value_exception.args}')
+except TypeError as type_exception:
+    print(f'Oops! Ocorreu um erro de conversão de tipo de dados.\n\
+        __class__ = {type_exception.__class__}\n\
+        __doc__ = {type_exception.__doc__}\n\
+        args = {type_exception.args}')
+except Exception as general_exception:
+    print(f'Oops! Ocorreu um erro não identificado.\n\
+        __class__ = {general_exception.__class__}\n\
+        __doc__ = {general_exception.__doc__}\n\
+        args = {general_exception.args}')
 finally:
-    pygame.quit()
-    ext()
+    close_game()
