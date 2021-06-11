@@ -1,5 +1,5 @@
 # SpaceInvadersClone
-Clone do jogo Space Invaders, desenvolvido em Python, utilizando a biblioteca Pygame
+Clone do jogo SpaceInvaders, desenvolvido em Python, utilizando a biblioteca Pygame
 
 
 Dependências:
