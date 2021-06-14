@@ -4,7 +4,7 @@ Utilizando a biblioteca: PyGame
 
 Criado por: Carlos Alberto Morais Moura Filho
 Versão: 1.0
-Atualizado em: 11/06/2021
+Atualizado em: 14/06/2021
 '''
 # pylint: disable=no-member
 # pylint: disable=too-many-locals
@@ -29,7 +29,7 @@ BASE_DIR = path.dirname(__file__)        # Diretorio do jogo
 SCREEN_WIDTH = 600                       # Comprimento da tela
 SCREEN_HEIGHT = 860                      # Altura da tela
 CAPTION = 'Space Invaders v1.0'          # Título do jogo
-WINDOW_ICON = f'{BASE_DIR}/assets/sprites/icons/icon.png'
+WINDOW_ICON = f'{BASE_DIR}/res/assets/icons/icon.png'
 # Definições do jogo
 FPS = 30                                 # Frames por segundo
 SPEED = 10                               # Velocidade do jogo
@@ -64,8 +64,8 @@ class Spaceship(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
         self.images = (
-            pygame.image.load(f'{BASE_DIR}/assets/sprites/player/player.png').convert_alpha(),
-            pygame.image.load(f'{BASE_DIR}/assets/sprites/player/player_.png').convert_alpha()
+            pygame.image.load(f'{BASE_DIR}/res/assets/player/player.png').convert_alpha(),
+            pygame.image.load(f'{BASE_DIR}/res/assets/player/player_.png').convert_alpha()
         )
         self.current_image = 0
         self.image = self.images[self.current_image]
@@ -113,7 +113,7 @@ class Laser(pygame.sprite.Sprite):
     def __init__(self, position):
         pygame.sprite.Sprite.__init__(self)
         self.image = pygame.image.load(
-            f'{BASE_DIR}/assets/sprites/player/bullet.png'
+            f'{BASE_DIR}/res/assets/player/bullet.png'
         ).convert_alpha()
         self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
@@ -142,7 +142,7 @@ class Explosion(pygame.sprite.Sprite):
         self.images = []
         for i in range(1, 74):
             self.images.append(pygame.image.load(
-                f'{BASE_DIR}/assets/sprites/explosion/frm{i}.png'
+                f'{BASE_DIR}/res/assets/explosion/frm{i}.png'
             ).convert_alpha())
         self.current_image = 0
         self.image = self.images[self.current_image]
@@ -181,10 +181,10 @@ class Invaders(pygame.sprite.Sprite):
             self.enemies.append(
                 (
                     pygame.image.load(
-                        f'{BASE_DIR}/assets/sprites/enemies/invaders/Enemy{i}.png'
+                        f'{BASE_DIR}/res/assets/enemies/invaders/Enemy{i}.png'
                     ).convert_alpha(),
                     pygame.image.load(
-                        f'{BASE_DIR}/assets/sprites/enemies/invaders/Enemy{i}_.png'
+                        f'{BASE_DIR}/res/assets/enemies/invaders/Enemy{i}_.png'
                     ).convert_alpha()
 
                 )
@@ -242,7 +242,7 @@ class Bullets(pygame.sprite.Sprite):
         self.images = []
         for i in range(1, 7):
             self.images.append(pygame.image.load(
-                f'{BASE_DIR}/assets/sprites/enemies/invaders/bullet{i}.png'
+                f'{BASE_DIR}/res/assets/enemies/invaders/bullet{i}.png'
             ).convert_alpha())
         self.current_image = 0
         self.image = self.images[self.current_image]
@@ -288,13 +288,13 @@ class Mothership(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.enemy = (
             pygame.image.load(
-                f'{BASE_DIR}/assets/sprites/enemies/mothership/mothership.png'
+                f'{BASE_DIR}/res/assets/enemies/mothership/mothership.png'
             ).convert_alpha(),
             pygame.image.load(
-                f'{BASE_DIR}/assets/sprites/enemies/mothership/mothership_.png'
+                f'{BASE_DIR}/res/assets/enemies/mothership/mothership_.png'
             ).convert_alpha(),
             pygame.image.load(
-                f'{BASE_DIR}/assets/sprites/enemies/mothership/mothership-burst.png'
+                f'{BASE_DIR}/res/assets/enemies/mothership/mothership-burst.png'
             ).convert_alpha()
         )
         self.current_image = 0
@@ -342,10 +342,10 @@ class Bomb(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.images = (
             pygame.image.load(
-                f'{BASE_DIR}/assets/sprites/enemies/mothership/bomb.png'
+                f'{BASE_DIR}/res/assets/enemies/mothership/bomb.png'
             ).convert_alpha(),
             pygame.image.load(
-                f'{BASE_DIR}/assets/sprites/enemies/mothership/bomb_.png'
+                f'{BASE_DIR}/res/assets/enemies/mothership/bomb_.png'
             ).convert_alpha()
         )
         self.current_image = 0
@@ -393,7 +393,7 @@ class Burst(pygame.sprite.Sprite):
         self.images = []
         for i in range(1, 14):
             self.images.append(pygame.image.load(
-                f'{BASE_DIR}/assets/sprites/burst/frm{i}.png'
+                f'{BASE_DIR}/res/assets/burst/frm{i}.png'
             ).convert_alpha())
         self.current_image = 0
         self.image = self.images[self.current_image]
@@ -464,55 +464,55 @@ def main():
     sound_type = 'wav' if 'win' in plat else 'ogg'
     # Carregamento dos sons do jogo
     bgm = (
-        f'{BASE_DIR}/assets/sounds/bgm/main.mid',
-        f'{BASE_DIR}/assets/sounds/bgm/level1.mid',
-        f'{BASE_DIR}/assets/sounds/bgm/level2.mid',
-        f'{BASE_DIR}/assets/sounds/bgm/level3.mid',
-        f'{BASE_DIR}/assets/sounds/bgm/level4.mid',
-        f'{BASE_DIR}/assets/sounds/bgm/level5.mid',
-        f'{BASE_DIR}/assets/sounds/bgm/level6.mid',
-        f'{BASE_DIR}/assets/sounds/bgm/level7.mid',
-        f'{BASE_DIR}/assets/sounds/bgm/level8.mid',
-        f'{BASE_DIR}/assets/sounds/bgm/level9.mid',
-        f'{BASE_DIR}/assets/sounds/bgm/boss.mid'
+        f'{BASE_DIR}/res/sounds/bgm/main.mid',
+        f'{BASE_DIR}/res/sounds/bgm/level1.mid',
+        f'{BASE_DIR}/res/sounds/bgm/level2.mid',
+        f'{BASE_DIR}/res/sounds/bgm/level3.mid',
+        f'{BASE_DIR}/res/sounds/bgm/level4.mid',
+        f'{BASE_DIR}/res/sounds/bgm/level5.mid',
+        f'{BASE_DIR}/res/sounds/bgm/level6.mid',
+        f'{BASE_DIR}/res/sounds/bgm/level7.mid',
+        f'{BASE_DIR}/res/sounds/bgm/level8.mid',
+        f'{BASE_DIR}/res/sounds/bgm/level9.mid',
+        f'{BASE_DIR}/res/sounds/bgm/boss.mid'
     )
     effects = (
-        pygame.mixer.Sound(f'{BASE_DIR}/assets/sounds/fx/{sound_type}/death.{sound_type}'),
-        pygame.mixer.Sound(f'{BASE_DIR}/assets/sounds/fx/{sound_type}/explosion.{sound_type}'),
-        pygame.mixer.Sound(f'{BASE_DIR}/assets/sounds/fx/{sound_type}/shot.{sound_type}'),
-        pygame.mixer.Sound(f'{BASE_DIR}/assets/sounds/fx/{sound_type}/burst.{sound_type}')
+        pygame.mixer.Sound(f'{BASE_DIR}/res/sounds/fx/{sound_type}/death.{sound_type}'),
+        pygame.mixer.Sound(f'{BASE_DIR}/res/sounds/fx/{sound_type}/explosion.{sound_type}'),
+        pygame.mixer.Sound(f'{BASE_DIR}/res/sounds/fx/{sound_type}/shot.{sound_type}'),
+        pygame.mixer.Sound(f'{BASE_DIR}/res/sounds/fx/{sound_type}/burst.{sound_type}')
     )
     # Criação das mensagens do jogo
     messages = (
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/start_game.png').convert_alpha(),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/loading.png').convert_alpha(),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/get_ready.png').convert_alpha(),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/invading.png').convert_alpha(),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/kill\'em_all.png').convert_alpha(),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/game_over.png').convert_alpha(),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/high_score.png').convert_alpha(),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/level_start.png').convert_alpha(),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/level_play.png').convert_alpha(),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/messages/pause_game.png').convert_alpha()
+        pygame.image.load(f'{BASE_DIR}/res/assets/messages/start_game.png').convert_alpha(),
+        pygame.image.load(f'{BASE_DIR}/res/assets/messages/loading.png').convert_alpha(),
+        pygame.image.load(f'{BASE_DIR}/res/assets/messages/get_ready.png').convert_alpha(),
+        pygame.image.load(f'{BASE_DIR}/res/assets/messages/invading.png').convert_alpha(),
+        pygame.image.load(f'{BASE_DIR}/res/assets/messages/kill\'em_all.png').convert_alpha(),
+        pygame.image.load(f'{BASE_DIR}/res/assets/messages/game_over.png').convert_alpha(),
+        pygame.image.load(f'{BASE_DIR}/res/assets/messages/high_score.png').convert_alpha(),
+        pygame.image.load(f'{BASE_DIR}/res/assets/messages/level_start.png').convert_alpha(),
+        pygame.image.load(f'{BASE_DIR}/res/assets/messages/level_play.png').convert_alpha(),
+        pygame.image.load(f'{BASE_DIR}/res/assets/messages/pause_game.png').convert_alpha()
     )
     # Criação dos números
     numbers = []
     for i in range(0, 20):
         pos = f'{i}-' if len(str(i)) == 1 else f'{str(i)[1]}+'
-        numbers.append(pygame.image.load(f'{BASE_DIR}/assets/sprites/numbers/num_{pos}.png'))
+        numbers.append(pygame.image.load(f'{BASE_DIR}/res/assets/numbers/num_{pos}.png'))
     # Criação da imagem de fundo
     backgrounds = (
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/main.png'),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/level1.png'),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/level2.png'),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/level3.png'),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/level4.png'),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/level5.png'),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/level6.png'),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/level7.png'),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/level8.png'),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/level9.png'),
-        pygame.image.load(f'{BASE_DIR}/assets/sprites/sceneries/boss.png')
+        pygame.image.load(f'{BASE_DIR}/res/assets/sceneries/main.png'),
+        pygame.image.load(f'{BASE_DIR}/res/assets/sceneries/level1.png'),
+        pygame.image.load(f'{BASE_DIR}/res/assets/sceneries/level2.png'),
+        pygame.image.load(f'{BASE_DIR}/res/assets/sceneries/level3.png'),
+        pygame.image.load(f'{BASE_DIR}/res/assets/sceneries/level4.png'),
+        pygame.image.load(f'{BASE_DIR}/res/assets/sceneries/level5.png'),
+        pygame.image.load(f'{BASE_DIR}/res/assets/sceneries/level6.png'),
+        pygame.image.load(f'{BASE_DIR}/res/assets/sceneries/level7.png'),
+        pygame.image.load(f'{BASE_DIR}/res/assets/sceneries/level8.png'),
+        pygame.image.load(f'{BASE_DIR}/res/assets/sceneries/level9.png'),
+        pygame.image.load(f'{BASE_DIR}/res/assets/sceneries/boss.png')
     )
     background = backgrounds[0]
     background = pygame.transform.scale(background, (SCREEN_WIDTH, SCREEN_HEIGHT))
