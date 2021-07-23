@@ -767,7 +767,7 @@ def main():
                 gameover_lstcnt = gameover_cntr
 
         pygame.display.update()
-
+main()
 try:
     if __name__ == "__main__":
         while True:
