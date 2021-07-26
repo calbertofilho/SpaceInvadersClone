@@ -180,7 +180,9 @@ class Invaders(pygame.sprite.Sprite):
         for i in range(0, 10):
             self.enemies.append(
                 (
-                    pygame.image.load(                        f'{BASE_DIR}/res/assets/enemies/invaders/Enemy{i}.png'                    ).convert_alpha(),
+                    pygame.image.load(
+                        f'{BASE_DIR}/res/assets/enemies/invaders/Enemy{i}.png'
+                    ).convert_alpha(),
                     pygame.image.load(
                         f'{BASE_DIR}/res/assets/enemies/invaders/Enemy{i}_.png'
                     ).convert_alpha()
@@ -765,7 +767,7 @@ def main():
                 gameover_lstcnt = gameover_cntr
 
         pygame.display.update()
-
+main()
 try:
     if __name__ == "__main__":
         while True:
