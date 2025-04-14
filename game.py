@@ -181,10 +181,10 @@ class Invaders(pygame.sprite.Sprite):
             self.enemies.append(
                 (
                     pygame.image.load(
-                        f'{BASE_DIR}/res/assets/enemies/invaders/Enemy{i}.png'
+                        f'{BASE_DIR}/res/assets/enemies/invaders/enemy{i}.png'
                     ).convert_alpha(),
                     pygame.image.load(
-                        f'{BASE_DIR}/res/assets/enemies/invaders/Enemy{i}_.png'
+                        f'{BASE_DIR}/res/assets/enemies/invaders/enemy{i}_.png'
                     ).convert_alpha()
 
                 )
