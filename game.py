@@ -464,17 +464,17 @@ def main():
     sound_type = 'wav' if 'win' in plat else 'ogg'
     # Carregamento dos sons do jogo
     bgm = (
-        f'{BASE_DIR}/res/sounds/bgm/main.mid',
-        f'{BASE_DIR}/res/sounds/bgm/level1.mid',
-        f'{BASE_DIR}/res/sounds/bgm/level2.mid',
-        f'{BASE_DIR}/res/sounds/bgm/level3.mid',
-        f'{BASE_DIR}/res/sounds/bgm/level4.mid',
-        f'{BASE_DIR}/res/sounds/bgm/level5.mid',
-        f'{BASE_DIR}/res/sounds/bgm/level6.mid',
-        f'{BASE_DIR}/res/sounds/bgm/level7.mid',
-        f'{BASE_DIR}/res/sounds/bgm/level8.mid',
-        f'{BASE_DIR}/res/sounds/bgm/level9.mid',
-        f'{BASE_DIR}/res/sounds/bgm/boss.mid'
+        f'{BASE_DIR}/res/sounds/bgm/midi/main.mid',
+        f'{BASE_DIR}/res/sounds/bgm/midi/level1.mid',
+        f'{BASE_DIR}/res/sounds/bgm/midi/level2.mid',
+        f'{BASE_DIR}/res/sounds/bgm/midi/level3.mid',
+        f'{BASE_DIR}/res/sounds/bgm/midi/level4.mid',
+        f'{BASE_DIR}/res/sounds/bgm/midi/level5.mid',
+        f'{BASE_DIR}/res/sounds/bgm/midi/level6.mid',
+        f'{BASE_DIR}/res/sounds/bgm/midi/level7.mid',
+        f'{BASE_DIR}/res/sounds/bgm/midi/level8.mid',
+        f'{BASE_DIR}/res/sounds/bgm/midi/level9.mid',
+        f'{BASE_DIR}/res/sounds/bgm/midi/boss.mid'
     )
     effects = (
         pygame.mixer.Sound(f'{BASE_DIR}/res/sounds/fx/{sound_type}/death.{sound_type}'),
