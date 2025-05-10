@@ -477,10 +477,10 @@ def main():
         f'{BASE_DIR}/res/sounds/bgm/midi/boss.mid'
     )
     effects = (
-        pygame.mixer.Sound(f'{BASE_DIR}/res/sounds/fx/{sound_type}/death.{sound_type}'),
-        pygame.mixer.Sound(f'{BASE_DIR}/res/sounds/fx/{sound_type}/explosion.{sound_type}'),
-        pygame.mixer.Sound(f'{BASE_DIR}/res/sounds/fx/{sound_type}/shot.{sound_type}'),
-        pygame.mixer.Sound(f'{BASE_DIR}/res/sounds/fx/{sound_type}/burst.{sound_type}')
+        pygame.mixer.Sound(f'{BASE_DIR}/res/sounds/sfx/{sound_type}/death.{sound_type}'),
+        pygame.mixer.Sound(f'{BASE_DIR}/res/sounds/sfx/{sound_type}/explosion.{sound_type}'),
+        pygame.mixer.Sound(f'{BASE_DIR}/res/sounds/sfx/{sound_type}/shot.{sound_type}'),
+        pygame.mixer.Sound(f'{BASE_DIR}/res/sounds/sfx/{sound_type}/burst.{sound_type}')
     )
     # Criação das mensagens do jogo
     messages = (
